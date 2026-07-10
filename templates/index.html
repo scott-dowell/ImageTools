@@ -57,7 +57,7 @@
           <div class="card-body">
             <div id="summary" class="text-secondary">No scan performed yet.</div>
             <div id="folderSummary" class="mt-3"></div>
-            <pre id="results" class="mt-3 mb-0"></pre>
+            <div id="resultsMeta" class="mt-3"></div>
           </div>
         </div>
       </div>
@@ -81,7 +81,7 @@
     const convertBtn = document.getElementById('convertBtn');
     const summary = document.getElementById('summary');
     const folderSummary = document.getElementById('folderSummary');
-    const results = document.getElementById('results');
+    const resultsMeta = document.getElementById('resultsMeta');
     const progressLabel = document.getElementById('progressLabel');
     const progressPercent = document.getElementById('progressPercent');
     const progressBar = document.getElementById('progressBar');
@@ -103,32 +103,36 @@
       summary.textContent = data.error ? data.error : `${data.count} image(s) found under ${data.root}`;
       if (data.error) {
         folderSummary.innerHTML = '';
+        resultsMeta.textContent = '';
       } else if (data.folders && data.folders.length) {
         folderSummary.innerHTML = `
-          <div class="small text-secondary mb-2">Folder results</div>
-          <div class="table-responsive">
-            <table class="table table-sm align-middle mb-0">
-              <thead>
-                <tr>
-                  <th scope="col">Folder</th>
-                  <th scope="col" class="text-end">Images</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${data.folders.map((item) => `
+          <div class="border rounded overflow-hidden">
+            <div class="bg-light px-3 py-2 border-bottom small fw-semibold text-secondary">Folder results</div>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle mb-0">
+                <thead>
                   <tr>
-                    <td>${item.folder}</td>
-                    <td class="text-end">${item.count}</td>
+                    <th scope="col">Folder</th>
+                    <th scope="col" class="text-end">Images</th>
                   </tr>
-                `).join('')}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  ${data.folders.map((item) => `
+                    <tr>
+                      <td class="text-break">${item.folder}</td>
+                      <td class="text-end fw-semibold">${item.count}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
           </div>
         `;
+        resultsMeta.innerHTML = `<div class="small text-muted"><span class="fw-semibold">Root:</span> ${data.root}</div>`;
       } else {
         folderSummary.innerHTML = '<div class="text-muted small">No image folders found.</div>';
+        resultsMeta.textContent = '';
       }
-      results.textContent = JSON.stringify(data, null, 2);
     });
 
     async function updateProgress() {
@@ -142,7 +146,7 @@
       if (data.state === 'done') {
         clearInterval(progressTimer);
         summary.textContent = `${data.converted_count} image(s) converted, ${data.skipped_count} skipped`;
-        results.textContent = JSON.stringify(data.result, null, 2);
+        resultsMeta.innerHTML = `<div class="small text-muted"><span class="fw-semibold">Completed:</span> ${data.completed_at || 'just now'}</div>`;
       }
     }
 
@@ -152,11 +156,11 @@
       const data = await callApi('/api/convert', { root, quality });
       if (data.error) {
         summary.textContent = data.error;
-        results.textContent = JSON.stringify(data, null, 2);
+        resultsMeta.textContent = '';
         return;
       }
       summary.textContent = 'Conversion started.';
-      results.textContent = JSON.stringify(data, null, 2);
+      resultsMeta.innerHTML = `<div class="small text-muted"><span class="fw-semibold">Run:</span> ${data.run ? data.run.root : root}</div>`;
       clearInterval(progressTimer);
       progressTimer = setInterval(updateProgress, 400);
     });
