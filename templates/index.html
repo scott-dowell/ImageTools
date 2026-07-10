@@ -40,7 +40,10 @@
         <div class="row g-3 align-items-end">
           <div class="col-md-7">
             <label class="form-label">Root folder</label>
-            <input id="rootFolder" class="form-control" placeholder="C:\\Photos" />
+            <div class="input-group">
+              <input id="rootFolder" class="form-control" placeholder="C:\\Photos" />
+              <button id="browseBtn" class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#browseModal">Browse…</button>
+            </div>
           </div>
           <div class="col-md-2">
             <label class="form-label">Quality</label>
@@ -123,9 +126,43 @@
     </div>
   </div>
 
+  <div class="modal fade" id="browseModal" tabindex="-1" aria-labelledby="browseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="browseModalLabel">Choose folder</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex gap-2 mb-3">
+            <button id="browseParentBtn" class="btn btn-outline-secondary btn-sm">Up one level</button>
+            <button id="browseRefreshBtn" class="btn btn-outline-secondary btn-sm">Refresh</button>
+          </div>
+          <div id="browseStatus" class="small text-muted mb-2">Loading folders…</div>
+          <div id="browseList" class="list-group"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button id="browseSelectBtn" type="button" class="btn btn-primary">Use selected folder</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     const scanBtn = document.getElementById('scanBtn');
     const convertBtn = document.getElementById('convertBtn');
+    const browseBtn = document.getElementById('browseBtn');
+    const rootFolderInput = document.getElementById('rootFolder');
+    const browseModal = document.getElementById('browseModal');
+    const browseList = document.getElementById('browseList');
+    const browseStatus = document.getElementById('browseStatus');
+    const browseParentBtn = document.getElementById('browseParentBtn');
+    const browseRefreshBtn = document.getElementById('browseRefreshBtn');
+    const browseSelectBtn = document.getElementById('browseSelectBtn');
+    let browseCurrentPath = '';
+    let browseSelectedPath = '';
     const summary = document.getElementById('summary');
     const folderSummary = document.getElementById('folderSummary');
     const resultsMeta = document.getElementById('resultsMeta');
@@ -219,6 +256,35 @@
       `;
     }
 
+    async function loadBrowseFolders(path = '') {
+      browseStatus.textContent = 'Loading folders…';
+      browseList.innerHTML = '';
+      const response = await fetch(`/api/browse?path=${encodeURIComponent(path)}`);
+      const data = await response.json();
+      browseCurrentPath = data.path || '';
+      browseSelectedPath = data.path || '';
+      browseStatus.textContent = data.path ? `Browsing ${data.path}` : 'Browsing drives and folders';
+      if (!data.dirs || !data.dirs.length) {
+        browseList.innerHTML = '<div class="list-group-item text-muted">No subfolders found.</div>';
+        return;
+      }
+      browseList.innerHTML = data.dirs.map((dir) => `
+        <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-path="${dir.full_path}">
+          <span>${dir.name}</span>
+          <span class="small text-muted">${dir.has_children ? 'folder' : 'empty'}</span>
+        </button>
+      `).join('');
+    }
+
+    function chooseFolder() {
+      browseSelectedPath = browseCurrentPath || rootFolderInput.value || '';
+      if (browseSelectedPath) {
+        rootFolderInput.value = browseSelectedPath;
+      }
+      const modal = bootstrap.Modal.getInstance(browseModal) || new bootstrap.Modal(browseModal);
+      modal.hide();
+    }
+
     function formatEta(seconds) {
       if (!seconds) return 'Calculating…';
       const mins = Math.floor(seconds / 60);
@@ -249,6 +315,36 @@
       });
       return response.json();
     }
+
+    browseBtn.addEventListener('click', async () => {
+      const modal = bootstrap.Modal.getOrCreateInstance(browseModal);
+      modal.show();
+      await loadBrowseFolders(rootFolderInput.value || '');
+    });
+
+    browseParentBtn.addEventListener('click', async () => {
+      if (!browseCurrentPath) {
+        await loadBrowseFolders('');
+        return;
+      }
+      const parentPath = browseCurrentPath.split(/\\|\//).filter(Boolean).slice(0, -1).join('\\') || '';
+      await loadBrowseFolders(parentPath);
+    });
+
+    browseRefreshBtn.addEventListener('click', async () => {
+      await loadBrowseFolders(browseCurrentPath || rootFolderInput.value || '');
+    });
+
+    browseSelectBtn.addEventListener('click', chooseFolder);
+
+    browseList.addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-path]');
+      if (!button) return;
+      const folderPath = button.getAttribute('data-path');
+      if (folderPath) {
+        await loadBrowseFolders(folderPath);
+      }
+    });
 
     scanBtn.addEventListener('click', async () => {
       const root = document.getElementById('rootFolder').value;

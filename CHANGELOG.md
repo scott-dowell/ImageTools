@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Add folder browser selection to the UI so users can choose a root folder without typing the path manually (Issue #20).
 - Add live current-file and ETA summary cards during conversion (Issue #19).
 - Add live session progress cards that update during conversion (Issue #18).
 - Stabilize large conversion progress state to avoid page-load failures during long runs (Issue #17).

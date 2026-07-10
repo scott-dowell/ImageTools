@@ -4,7 +4,7 @@ from pathlib import Path
 from PIL import Image
 
 import app as app_module
-from app import _update_folder_statuses_for_progress
+from app import _update_folder_statuses_for_progress, select_folder_path, write_uploaded_folder
 from converter import (
     build_folder_progress_summary,
     convert_tree,
@@ -13,6 +13,33 @@ from converter import (
     summarize_image_counts_by_folder,
     update_folder_statuses,
 )
+
+
+def test_select_folder_path_uses_the_provided_chooser() -> None:
+    selected_path = select_folder_path(lambda: "C:/images")
+
+    assert selected_path == "C:/images"
+
+
+def test_write_uploaded_folder_preserves_relative_paths(tmp_path: Path) -> None:
+    class FakeUpload:
+        def __init__(self, filename: str, payload: bytes) -> None:
+            self.filename = filename
+            self._payload = payload
+
+        def save(self, destination: Path) -> None:
+            destination.write_bytes(self._payload)
+
+    destination_root = tmp_path / "uploaded"
+    written_root = write_uploaded_folder(
+        [FakeUpload("nested/one.jpg", b"img"), FakeUpload("README.txt", b"read")],
+        destination_root,
+        "photos",
+    )
+
+    assert written_root == destination_root / "photos"
+    assert (written_root / "nested" / "one.jpg").exists()
+    assert (written_root / "README.txt").exists()
 
 
 def test_discover_and_convert_images(tmp_path: Path) -> None:

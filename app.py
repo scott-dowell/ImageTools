@@ -1,4 +1,5 @@
 import os
+import shutil
 import threading
 from datetime import datetime
 from pathlib import Path, PurePath
@@ -65,6 +66,31 @@ def _update_run_state(**updates) -> None:
         if _run_state.get("state") in {"idle", "done"}:
             _run_state["current_file"] = ""
             _run_state["progress_percent"] = 0.0
+
+
+def select_folder_path(chooser=None) -> str:
+    chooser = chooser or (lambda: str(Path.cwd()))
+    return str(chooser()).strip()
+
+
+def write_uploaded_folder(uploads: list, destination_root: str | Path, folder_name: str) -> Path:
+    destination_root_path = Path(destination_root)
+    target_root = destination_root_path / folder_name
+    target_root.mkdir(parents=True, exist_ok=True)
+
+    for upload in uploads or []:
+        name = getattr(upload, "filename", "") or ""
+        if not name:
+            continue
+        relative_name = str(Path(name).as_posix())
+        destination_path = target_root / relative_name
+        destination_path.parent.mkdir(parents=True, exist_ok=True)
+        if hasattr(upload, "save"):
+            upload.save(destination_path)
+        else:
+            destination_path.write_bytes(b"")
+
+    return target_root
 
 
 def _normalize_folder_path(path: str) -> str:
@@ -213,6 +239,33 @@ def scan_folder():
         "count": len(files),
         "files": [str(path) for path in files[:200]],
         "folders": folder_summary,
+    })
+
+
+@app.route("/api/browse", methods=["GET"])
+def browse_folder():
+    path = request.args.get("path") or ""
+    try:
+        base_path = Path(path).expanduser() if path else Path.cwd()
+        resolved_path = base_path.resolve()
+        if not resolved_path.exists():
+            resolved_path.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        resolved_path = Path.cwd()
+
+    directories = []
+    for child in sorted(resolved_path.iterdir(), key=lambda item: item.name.lower()):
+        if child.is_dir() and not child.name.startswith("."):
+            directories.append({
+                "name": child.name,
+                "full_path": str(child),
+                "has_children": any(grandchild.is_dir() for grandchild in child.iterdir()),
+            })
+
+    return jsonify({
+        "path": str(resolved_path),
+        "parent": str(resolved_path.parent) if resolved_path.parent != resolved_path else None,
+        "dirs": directories,
     })
 
 
