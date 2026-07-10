@@ -20,4 +20,5 @@ All notable changes to this project will be documented in this file.
 - Update folder statuses during conversion (Issue #8).
 - Skip existing WebP files (Issue #9).
 - Add per-folder progress and saved-size metrics (Issue #10).
-- Add folder progress reporting and browser verification (Issue #11).`n- Normalize folder paths for progress updates (Issue #12).
+- Add folder progress reporting and browser verification (Issue #11).
+- Normalize folder paths for progress updates (Issue #12).
