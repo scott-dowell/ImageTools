@@ -144,9 +144,22 @@ def test_update_folder_statuses_for_progress_marks_previous_folder_done() -> Non
 
     updated, current_folder = _update_folder_statuses_for_progress(statuses, "/tmp/two/image.jpg", "/tmp/one")
 
-    assert current_folder == "/tmp/two"
+    assert current_folder == app_module._normalize_folder_path("/tmp/two")
     assert updated[0]["status"] == "done"
     assert updated[1]["status"] == "converting"
+
+
+def test_update_folder_statuses_for_progress_normalizes_dot_segments(tmp_path: Path) -> None:
+    folder_dir = tmp_path / "images" / "folder"
+    folder_dir.mkdir(parents=True)
+
+    statuses = [{"folder": str(folder_dir), "status": "pending"}]
+    current_path = folder_dir / "." / "image.jpg"
+
+    updated, current_folder = _update_folder_statuses_for_progress(statuses, str(current_path), None)
+
+    assert current_folder == app_module._normalize_folder_path(str(folder_dir))
+    assert updated[0]["status"] == "converting"
 
 
 def test_on_progress_accumulates_folder_totals_across_files(tmp_path: Path) -> None:

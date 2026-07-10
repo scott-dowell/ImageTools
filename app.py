@@ -48,14 +48,15 @@ def _update_run_state(**updates) -> None:
 
 
 def _normalize_folder_path(path: str) -> str:
-    return str(PurePath(path)).replace("\\", "/")
+    return str(Path(path).resolve()).replace("\\", "/")
 
 
 def _resolve_folder_path(path: str) -> str:
     path_obj = Path(path)
-    if path_obj.name and path_obj.suffix:
-        return str(path_obj.parent).replace("\\", "/")
-    return str(path_obj).replace("\\", "/")
+    resolved_path = path_obj.resolve()
+    if resolved_path.name and resolved_path.suffix:
+        return _normalize_folder_path(resolved_path.parent)
+    return _normalize_folder_path(resolved_path)
 
 
 def _update_folder_statuses_for_progress(statuses: list[dict], current_path: str, previous_path: str | None = None) -> tuple[list[dict], str]:
