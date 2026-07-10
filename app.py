@@ -81,7 +81,7 @@ def _update_folder_statuses_for_progress(statuses: list[dict], current_path: str
     return updated, current_folder
 
 
-def _on_progress(processed: int, total: int, current_path: str) -> None:
+def _on_progress(processed: int, total: int, current_path: str, conversion_result: dict | None = None) -> None:
     with _run_lock:
         previous_path = _run_state.get("current_file") or None
         processed_paths = list(_run_state.get("processed_paths", []))
@@ -103,23 +103,31 @@ def _on_progress(processed: int, total: int, current_path: str) -> None:
                 current_path,
                 previous_path,
             )
-            folder_progress = build_folder_progress_summary(
-                _run_state.get("root", ""),
-                processed_paths,
-                completed_paths,
-            )
-            if folder_progress:
-                for item in folder_progress:
-                    for folder_item in _run_state["folders"]:
-                        if folder_item.get("folder") == item.get("folder"):
-                            folder_item["converted"] = item.get("converted", 0)
-                            folder_item["skipped"] = item.get("skipped", 0)
-                            folder_item["saved_bytes"] = item.get("saved_bytes", 0)
-                            folder_item["size_before_bytes"] = item.get("size_before_bytes", 0)
-                            folder_item["size_after_bytes"] = item.get("size_after_bytes", 0)
-                            folder_item["savings_percent"] = item.get("savings_percent", 0)
-                            folder_item["progress"] = item.get("progress", 0)
-                            break
+            folder_summaries = [dict(item) for item in _run_state.get("folders", [])]
+            if conversion_result is not None:
+                folder_path = str(Path(current_path).parent)
+                for folder_item in folder_summaries:
+                    if _normalize_folder_path(folder_item.get("folder", "")) == _normalize_folder_path(folder_path):
+                        if conversion_result is not None:
+                            if conversion_result.get("status") == "converted":
+                                folder_item["converted"] += 1
+                                if not folder_item.get("size_before_bytes", 0):
+                                    folder_item["size_before_bytes"] = int(conversion_result.get("size_before_bytes", 0) or 0)
+                                size_before_bytes = int(conversion_result.get("size_before_bytes", 0) or 0)
+                                folder_item["size_before_bytes_for_percent"] = int(folder_item.get("size_before_bytes_for_percent", 0) or 0) + size_before_bytes
+                                folder_item["size_after_bytes"] += int(conversion_result.get("size_after_bytes", 0) or 0)
+                                folder_item["saved_bytes"] += int(conversion_result.get("saved_bytes", 0) or 0)
+                            elif conversion_result.get("status") in {"failed", "skipped"}:
+                                folder_item["skipped"] += 1
+                        else:
+                            folder_item["converted"] += 1
+                        folder_item["progress"] = int(round((folder_item.get("converted", 0) + folder_item.get("skipped", 0)) / folder_item["count"] * 100)) if folder_item["count"] else 100
+                        percent_baseline = folder_item.get("size_before_bytes_for_percent", 0) or folder_item.get("size_before_bytes", 0)
+                        if percent_baseline > 0:
+                            folder_item["savings_percent"] = int(round((folder_item.get("saved_bytes", 0) / max(percent_baseline, 1)) * 100)) if percent_baseline else 0
+                            folder_item["savings_percent"] = max(0, min(100, folder_item["savings_percent"]))
+                        break
+            _run_state["folders"] = folder_summaries
 
 
 def _run_conversion(root: str, quality: int) -> None:

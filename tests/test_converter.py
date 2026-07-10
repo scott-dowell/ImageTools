@@ -181,14 +181,14 @@ def test_on_progress_accumulates_folder_totals_across_files(tmp_path: Path) -> N
 
     app_module._run_state.update({
         "root": str(source_dir),
-        "folders": [{"folder": str(folder_dir), "count": 2, "status": "pending", "converted": 0, "skipped": 0, "saved_bytes": 0, "progress": 0}],
+        "folders": [{"folder": str(folder_dir), "count": 2, "status": "pending", "converted": 0, "skipped": 0, "saved_bytes": 0, "size_before_bytes": 200, "size_after_bytes": 0, "savings_percent": 0, "progress": 0}],
         "processed_paths": [],
         "completed_paths": [],
         "current_file": "",
     })
 
-    app_module._on_progress(1, 2, str(first_path))
-    app_module._on_progress(2, 2, str(second_path))
+    app_module._on_progress(1, 2, str(first_path), {"status": "converted", "size_before_bytes": 100, "size_after_bytes": 50, "saved_bytes": 50})
+    app_module._on_progress(2, 2, str(second_path), {"status": "converted", "size_before_bytes": 100, "size_after_bytes": 50, "saved_bytes": 50})
 
     folder_state = next(item for item in app_module._run_state["folders"] if item["folder"] == str(folder_dir))
     assert folder_state["converted"] == 2
@@ -204,15 +204,51 @@ def test_build_folder_progress_summary_tracks_counts_and_saved_size(tmp_path: Pa
     source_path = folder_dir / "one.jpg"
     Image.new("RGB", (64, 64), color=(255, 0, 0)).save(source_path)
 
-    summary = build_folder_progress_summary(source_dir, [source_path], [source_path])
+    summary = build_folder_progress_summary(source_dir, [{"path": str(source_path), "status": "converted", "output": str(source_path.with_suffix(".webp")), "size_before_bytes": 100, "size_after_bytes": 100, "saved_bytes": 50}])
 
     assert summary[0]["folder"] == str(folder_dir)
     assert summary[0]["count"] == 1
     assert summary[0]["status"] == "pending"
     assert summary[0]["converted"] == 1
     assert summary[0]["skipped"] == 0
-    assert summary[0]["saved_bytes"] == 0
+    assert summary[0]["saved_bytes"] == 50
     assert summary[0]["size_before_bytes"] == source_path.stat().st_size
-    assert summary[0]["size_after_bytes"] == 0
-    assert summary[0]["savings_percent"] == 0
+    assert summary[0]["size_after_bytes"] == 100
+    assert summary[0]["savings_percent"] == 50
     assert summary[0]["progress"] == 100
+
+
+def test_on_progress_updates_folder_metrics_from_conversion_result(tmp_path: Path) -> None:
+    source_dir = tmp_path / "images"
+    folder_dir = source_dir / "folder"
+    folder_dir.mkdir(parents=True)
+
+    source_path = folder_dir / "one.jpg"
+    Image.new("RGB", (64, 64), color=(255, 0, 0)).save(source_path)
+
+    app_module._run_state.update({
+        "root": str(source_dir),
+        "folders": [{"folder": str(folder_dir), "count": 1, "status": "pending", "converted": 0, "skipped": 0, "saved_bytes": 0, "size_before_bytes": source_path.stat().st_size, "size_after_bytes": 0, "savings_percent": 0, "progress": 0}],
+        "processed_paths": [],
+        "completed_paths": [],
+        "current_file": "",
+    })
+
+    app_module._on_progress(
+        1,
+        1,
+        str(source_path),
+        {
+            "status": "converted",
+            "size_before_bytes": 100,
+            "size_after_bytes": 100,
+            "saved_bytes": 50,
+        },
+    )
+
+    folder_state = next(item for item in app_module._run_state["folders"] if item["folder"] == str(folder_dir))
+    assert folder_state["converted"] == 1
+    assert folder_state["size_after_bytes"] == 100
+    assert folder_state["saved_bytes"] == 50
+    assert folder_state["savings_percent"] == 50
+    assert folder_state["progress"] == 100

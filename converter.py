@@ -65,37 +65,72 @@ def summarize_folder_status(root: str | os.PathLike[str]) -> List[Dict[str, Any]
 
 def build_folder_progress_summary(
     root: str | os.PathLike[str],
-    processed_paths: List[Path],
-    completed_paths: List[Path],
+    processed_paths: List[Path] | None = None,
+    completed_paths: List[Path] | None = None,
+    conversion_results: List[Dict[str, Any]] | None = None,
+    initial_folder_summaries: List[Dict[str, Any]] | None = None,
 ) -> List[Dict[str, Any]]:
+    if conversion_results is None and processed_paths is not None and completed_paths is None and processed_paths and isinstance(processed_paths[0], dict):
+        conversion_results = processed_paths
+        processed_paths = []
+
     root_path = Path(root)
-    summaries = summarize_folder_status(root_path)
+    summaries = [dict(item) for item in initial_folder_summaries] if initial_folder_summaries is not None else summarize_folder_status(root_path)
     folder_map = {item["folder"]: item for item in summaries}
 
-    for source_path in processed_paths:
-        folder = str(source_path.parent)
-        item = folder_map.get(folder)
-        if item is None:
-            continue
-        item["progress"] = int(round((item.get("converted", 0) + item.get("skipped", 0)) / item["count"] * 100)) if item["count"] else 100
+    for item in summaries:
+        item.setdefault("converted", 0)
+        item.setdefault("skipped", 0)
+        item.setdefault("saved_bytes", 0)
+        item.setdefault("size_before_bytes", 0)
+        item.setdefault("size_after_bytes", 0)
+        item.setdefault("savings_percent", 0)
+        item.setdefault("progress", 0)
+        item.setdefault("size_before_bytes_for_percent", 0)
 
-    for source_path in completed_paths:
-        folder = str(source_path.parent)
-        item = folder_map.get(folder)
-        if item is None:
-            continue
-        output_path = source_path.parent / "Converted.webp" / f"{source_path.stem}.webp"
-        if output_path.exists():
-            item["converted"] += 1
-            output_size = output_path.stat().st_size
-            item["size_after_bytes"] += output_size
-            item["saved_bytes"] += max(source_path.stat().st_size - output_size, 0)
-        else:
-            item["converted"] += 1
-        item["progress"] = int(round((item.get("converted", 0) + item.get("skipped", 0)) / item["count"] * 100)) if item["count"] else 100
-        if item.get("size_before_bytes", 0) > 0:
-            item["savings_percent"] = int(round((item.get("saved_bytes", 0) / item["size_before_bytes"]) * 100)) if item["size_before_bytes"] else 0
-            item["savings_percent"] = max(0, min(100, item["savings_percent"]))
+    if conversion_results:
+        for result in conversion_results:
+            source_path = Path(result.get("path", ""))
+            if not source_path:
+                continue
+            folder = str(source_path.parent)
+            item = folder_map.get(folder)
+            if item is None:
+                continue
+            if result.get("status") == "converted":
+                item["converted"] += 1
+                if not item.get("size_before_bytes", 0):
+                    item["size_before_bytes"] = int(result.get("size_before_bytes", 0) or 0)
+                size_before_bytes = int(result.get("size_before_bytes", 0) or 0)
+                item["size_before_bytes_for_percent"] = int(item.get("size_before_bytes_for_percent", 0) or 0) + size_before_bytes
+                item["size_after_bytes"] += int(result.get("size_after_bytes", 0) or 0)
+                item["saved_bytes"] += int(result.get("saved_bytes", 0) or 0)
+            elif result.get("status") in {"failed", "skipped"}:
+                item["skipped"] += 1
+            item["progress"] = int(round((item.get("converted", 0) + item.get("skipped", 0)) / item["count"] * 100)) if item["count"] else 100
+            percent_baseline = item.get("size_before_bytes_for_percent", 0) or item.get("size_before_bytes", 0)
+            if percent_baseline > 0:
+                item["savings_percent"] = int(round((item.get("saved_bytes", 0) / max(percent_baseline, 1)) * 100)) if percent_baseline else 0
+                item["savings_percent"] = max(0, min(100, item["savings_percent"]))
+    else:
+        for source_path in completed_paths or []:
+            folder = str(source_path.parent)
+            item = folder_map.get(folder)
+            if item is None:
+                continue
+            output_path = source_path.parent / "Converted.webp" / f"{source_path.stem}.webp"
+            if output_path.exists():
+                item["converted"] += 1
+                output_size = output_path.stat().st_size
+                item["size_after_bytes"] += output_size
+                item["saved_bytes"] += max(source_path.stat().st_size - output_size, 0)
+            else:
+                item["converted"] += 1
+            item["progress"] = int(round((item.get("converted", 0) + item.get("skipped", 0)) / item["count"] * 100)) if item["count"] else 100
+            percent_baseline = item.get("size_before_bytes_for_percent", 0) or item.get("size_before_bytes", 0)
+            if percent_baseline > 0:
+                item["savings_percent"] = int(round((item.get("saved_bytes", 0) / max(percent_baseline, 1)) * 100)) if percent_baseline else 0
+                item["savings_percent"] = max(0, min(100, item["savings_percent"]))
 
     return list(folder_map.values())
 
@@ -117,6 +152,7 @@ def convert_tree(
 ) -> Dict[str, Any]:
     root_path = Path(root)
     discovered_files = discover_image_files(root_path)
+    initial_folder_summaries = summarize_folder_status(root_path)
     results: Dict[str, Any] = {
         "root": str(root_path),
         "converted_count": 0,
@@ -125,6 +161,7 @@ def convert_tree(
     }
     processed_paths: List[Path] = []
     completed_paths: List[Path] = []
+    conversion_results: List[Dict[str, Any]] = []
 
     for index, source_path in enumerate(discovered_files, start=1):
         if source_path.name.lower().startswith("converted") or source_path.suffix.lower() == ".webp":
@@ -143,16 +180,43 @@ def convert_tree(
         except (UnidentifiedImageError, OSError, ValueError):
             results["skipped_count"] += 1
             results["files"].append({"path": str(source_path), "status": "failed"})
+            conversion_results.append({"path": str(source_path), "status": "failed"})
         else:
+            size_before_bytes = source_path.stat().st_size
             source_path.unlink(missing_ok=True)
+            output_size = output_path.stat().st_size
+            saved_bytes = max(size_before_bytes - output_size, 0)
             results["converted_count"] += 1
-            results["files"].append({"path": str(source_path), "status": "converted", "output": str(output_path)})
+            results["files"].append({
+                "path": str(source_path),
+                "status": "converted",
+                "output": str(output_path),
+                "size_before_bytes": size_before_bytes,
+                "size_after_bytes": output_size,
+                "saved_bytes": saved_bytes,
+            })
+            conversion_results.append({
+                "path": str(source_path),
+                "status": "converted",
+                "size_before_bytes": size_before_bytes,
+                "size_after_bytes": output_size,
+                "saved_bytes": saved_bytes,
+            })
 
         processed_paths.append(source_path)
         completed_paths.append(source_path)
 
         if on_progress is not None:
-            on_progress(index, len(discovered_files), str(source_path))
+            try:
+                on_progress(index, len(discovered_files), str(source_path), conversion_results[-1])
+            except TypeError:
+                on_progress(index, len(discovered_files), str(source_path))
 
-    results["folder_progress"] = build_folder_progress_summary(root_path, processed_paths, completed_paths)
+    results["folder_progress"] = build_folder_progress_summary(
+        root_path,
+        processed_paths,
+        completed_paths,
+        conversion_results=conversion_results,
+        initial_folder_summaries=initial_folder_summaries,
+    )
     return results
