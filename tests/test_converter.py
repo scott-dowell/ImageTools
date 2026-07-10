@@ -2,7 +2,10 @@ from pathlib import Path
 
 from PIL import Image
 
+import app as app_module
+from app import _update_folder_statuses_for_progress
 from converter import (
+    build_folder_progress_summary,
     convert_tree,
     discover_image_files,
     summarize_folder_status,
@@ -89,6 +92,22 @@ def test_summarize_folder_status_defaults_to_pending(tmp_path: Path) -> None:
     assert summary[0]["status"] == "pending"
 
 
+def test_summarize_folder_status_tracks_size_before_bytes(tmp_path: Path) -> None:
+    source_dir = tmp_path / "images"
+    folder_dir = source_dir / "folder"
+    folder_dir.mkdir(parents=True)
+
+    source_path = folder_dir / "one.jpg"
+    Image.new("RGB", (64, 64), color=(255, 0, 0)).save(source_path)
+
+    summary = summarize_folder_status(source_dir)
+
+    assert summary[0]["folder"] == str(folder_dir)
+    assert summary[0]["size_before_bytes"] == source_path.stat().st_size
+    assert summary[0]["size_after_bytes"] == 0
+    assert summary[0]["savings_percent"] == 0
+
+
 def test_webp_files_are_skipped(tmp_path: Path) -> None:
     source_dir = tmp_path / "images"
     source_dir.mkdir()
@@ -115,3 +134,70 @@ def test_update_folder_statuses_transitions_folder_states() -> None:
 
     assert updated[0]["status"] == "done"
     assert updated[1]["status"] == "pending"
+
+
+def test_update_folder_statuses_for_progress_marks_previous_folder_done() -> None:
+    statuses = [
+        {"folder": "/tmp/one", "count": 1, "status": "converting"},
+        {"folder": "/tmp/two", "count": 1, "status": "pending"},
+    ]
+
+    updated, current_folder = _update_folder_statuses_for_progress(statuses, "/tmp/two/image.jpg", "/tmp/one")
+
+    assert current_folder == "/tmp/two"
+    assert updated[0]["status"] == "done"
+    assert updated[1]["status"] == "converting"
+
+
+def test_on_progress_accumulates_folder_totals_across_files(tmp_path: Path) -> None:
+    source_dir = tmp_path / "images"
+    folder_dir = source_dir / "folder"
+    folder_dir.mkdir(parents=True)
+
+    first_path = folder_dir / "one.jpg"
+    second_path = folder_dir / "two.jpg"
+    Image.new("RGB", (64, 64), color=(255, 0, 0)).save(first_path)
+    Image.new("RGB", (64, 64), color=(0, 255, 0)).save(second_path)
+
+    output_dir = folder_dir / "Converted.webp"
+    output_dir.mkdir(exist_ok=True)
+    (output_dir / "one.webp").write_bytes(b"1234567890")
+    (output_dir / "two.webp").write_bytes(b"12345678901234567890")
+
+    app_module._run_state.update({
+        "root": str(source_dir),
+        "folders": [{"folder": str(folder_dir), "count": 2, "status": "pending", "converted": 0, "skipped": 0, "saved_bytes": 0, "progress": 0}],
+        "processed_paths": [],
+        "completed_paths": [],
+        "current_file": "",
+    })
+
+    app_module._on_progress(1, 2, str(first_path))
+    app_module._on_progress(2, 2, str(second_path))
+
+    folder_state = next(item for item in app_module._run_state["folders"] if item["folder"] == str(folder_dir))
+    assert folder_state["converted"] == 2
+    assert folder_state["saved_bytes"] > 0
+    assert folder_state["progress"] == 100
+
+
+def test_build_folder_progress_summary_tracks_counts_and_saved_size(tmp_path: Path) -> None:
+    source_dir = tmp_path / "images"
+    folder_dir = source_dir / "folder"
+    folder_dir.mkdir(parents=True)
+
+    source_path = folder_dir / "one.jpg"
+    Image.new("RGB", (64, 64), color=(255, 0, 0)).save(source_path)
+
+    summary = build_folder_progress_summary(source_dir, [source_path], [source_path])
+
+    assert summary[0]["folder"] == str(folder_dir)
+    assert summary[0]["count"] == 1
+    assert summary[0]["status"] == "pending"
+    assert summary[0]["converted"] == 1
+    assert summary[0]["skipped"] == 0
+    assert summary[0]["saved_bytes"] == 0
+    assert summary[0]["size_before_bytes"] == source_path.stat().st_size
+    assert summary[0]["size_after_bytes"] == 0
+    assert summary[0]["savings_percent"] == 0
+    assert summary[0]["progress"] == 100

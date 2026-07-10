@@ -10,6 +10,8 @@
     .hero { background: linear-gradient(135deg, #0d6efd, #6f42c1); color: white; }
     .card { border-radius: 1rem; }
     pre { white-space: pre-wrap; word-break: break-word; }
+    .folder-table { min-width: 980px; }
+    .folder-table th, .folder-table td { white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -76,6 +78,60 @@
     const progressDetail = document.getElementById('progressDetail');
     let progressTimer = null;
 
+    function renderFolderResults(items) {
+      folderSummary.innerHTML = `
+        <div class="border rounded overflow-hidden">
+          <div class="bg-light px-3 py-2 border-bottom small fw-semibold text-secondary">Folder results</div>
+          <div class="table-responsive" style="overflow-x: auto;">
+            <table class="table table-sm table-hover align-middle mb-0 folder-table">
+              <thead>
+                <tr>
+                  <th scope="col">Folder</th>
+                  <th scope="col" class="text-end">Images</th>
+                  <th scope="col">Progress</th>
+                  <th scope="col">Converted</th>
+                  <th scope="col">Skipped</th>
+                  <th scope="col">Before</th>
+                  <th scope="col">After</th>
+                  <th scope="col">Saved</th>
+                  <th scope="col">% Saved</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${items.map((item) => `
+                  <tr>
+                    <td class="text-break">${item.folder}</td>
+                    <td class="text-end fw-semibold">${item.count}</td>
+                    <td>${item.progress ?? 0}%</td>
+                    <td>${item.converted ?? 0}</td>
+                    <td>${item.skipped ?? 0}</td>
+                    <td>${formatBytes(item.size_before_bytes ?? 0)}</td>
+                    <td>${formatBytes(item.size_after_bytes ?? 0)}</td>
+                    <td>${formatBytes(item.saved_bytes ?? 0)}</td>
+                    <td>${item.savings_percent ?? 0}%</td>
+                    <td><span class="badge text-bg-secondary">${item.status || 'pending'}</span></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function formatBytes(bytes) {
+      if (!bytes) return '0 B';
+      const units = ['B', 'KB', 'MB', 'GB'];
+      let size = bytes;
+      let unitIndex = 0;
+      while (size >= 1024 && unitIndex < units.length - 1) {
+        size /= 1024;
+        unitIndex += 1;
+      }
+      return `${size.toFixed(size >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+    }
+
     async function callApi(path, payload) {
       const response = await fetch(path, {
         method: 'POST',
@@ -93,31 +149,7 @@
         folderSummary.innerHTML = '';
         resultsMeta.textContent = '';
       } else if (data.folders && data.folders.length) {
-        folderSummary.innerHTML = `
-          <div class="border rounded overflow-hidden">
-            <div class="bg-light px-3 py-2 border-bottom small fw-semibold text-secondary">Folder results</div>
-            <div class="table-responsive">
-              <table class="table table-sm table-hover align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th scope="col">Folder</th>
-                    <th scope="col" class="text-end">Images</th>
-                    <th scope="col">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${data.folders.map((item) => `
-                    <tr>
-                      <td class="text-break">${item.folder}</td>
-                      <td class="text-end fw-semibold">${item.count}</td>
-                      <td><span class="badge text-bg-secondary">${item.status || 'pending'}</span></td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        `;
+        renderFolderResults(data.folders);
         resultsMeta.innerHTML = '';
       } else {
         folderSummary.innerHTML = '<div class="text-muted small">No image folders found.</div>';
@@ -134,31 +166,7 @@
       progressBar.style.width = `${percent}%`;
       progressDetail.textContent = data.current_file ? `Working on ${data.current_file}` : 'No conversion running.';
       if (data.folders && data.folders.length) {
-        folderSummary.innerHTML = `
-          <div class="border rounded overflow-hidden">
-            <div class="bg-light px-3 py-2 border-bottom small fw-semibold text-secondary">Folder results</div>
-            <div class="table-responsive">
-              <table class="table table-sm table-hover align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th scope="col">Folder</th>
-                    <th scope="col" class="text-end">Images</th>
-                    <th scope="col">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${data.folders.map((item) => `
-                    <tr>
-                      <td class="text-break">${item.folder}</td>
-                      <td class="text-end fw-semibold">${item.count}</td>
-                      <td><span class="badge text-bg-secondary">${item.status || 'pending'}</span></td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        `;
+        renderFolderResults(data.folders);
       }
       if (data.state === 'done') {
         clearInterval(progressTimer);

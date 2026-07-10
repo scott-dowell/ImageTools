@@ -10,6 +10,10 @@ SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tif", ".tiff"
 ProgressCallback = Callable[[int, int, str], None]
 
 
+def _normalize_folder_path(path: str | os.PathLike[str]) -> str:
+    return str(Path(path)).replace("\\", "/")
+
+
 def discover_image_files(root: str | os.PathLike[str]) -> List[Path]:
     root_path = Path(root)
     if not root_path.exists():
@@ -38,14 +42,69 @@ def summarize_image_counts_by_folder(root: str | os.PathLike[str]) -> List[Dict[
 
 
 def summarize_folder_status(root: str | os.PathLike[str]) -> List[Dict[str, Any]]:
-    summaries = summarize_image_counts_by_folder(root)
-    return [{"folder": item["folder"], "count": item["count"], "status": "pending"} for item in summaries]
+    root_path = Path(root)
+    summaries = summarize_image_counts_by_folder(root_path)
+    folder_sizes: Dict[Path, int] = {}
+    for path in root_path.rglob("*"):
+        if path.is_file() and path.suffix.lower() in SUPPORTED_EXTENSIONS:
+            folder_sizes[path.parent] = folder_sizes.get(path.parent, 0) + path.stat().st_size
+
+    return [{
+        "folder": item["folder"],
+        "count": item["count"],
+        "status": "pending",
+        "converted": 0,
+        "skipped": 0,
+        "saved_bytes": 0,
+        "size_before_bytes": folder_sizes.get(Path(item["folder"]), 0),
+        "size_after_bytes": 0,
+        "savings_percent": 0,
+        "progress": 0,
+    } for item in summaries]
+
+
+def build_folder_progress_summary(
+    root: str | os.PathLike[str],
+    processed_paths: List[Path],
+    completed_paths: List[Path],
+) -> List[Dict[str, Any]]:
+    root_path = Path(root)
+    summaries = summarize_folder_status(root_path)
+    folder_map = {item["folder"]: item for item in summaries}
+
+    for source_path in processed_paths:
+        folder = str(source_path.parent)
+        item = folder_map.get(folder)
+        if item is None:
+            continue
+        item["progress"] = int(round((item.get("converted", 0) + item.get("skipped", 0)) / item["count"] * 100)) if item["count"] else 100
+
+    for source_path in completed_paths:
+        folder = str(source_path.parent)
+        item = folder_map.get(folder)
+        if item is None:
+            continue
+        output_path = source_path.parent / "Converted.webp" / f"{source_path.stem}.webp"
+        if output_path.exists():
+            item["converted"] += 1
+            output_size = output_path.stat().st_size
+            item["size_after_bytes"] += output_size
+            item["saved_bytes"] += max(source_path.stat().st_size - output_size, 0)
+        else:
+            item["converted"] += 1
+        item["progress"] = int(round((item.get("converted", 0) + item.get("skipped", 0)) / item["count"] * 100)) if item["count"] else 100
+        if item.get("size_before_bytes", 0) > 0:
+            item["savings_percent"] = int(round((item.get("saved_bytes", 0) / item["size_before_bytes"]) * 100)) if item["size_before_bytes"] else 0
+            item["savings_percent"] = max(0, min(100, item["savings_percent"]))
+
+    return list(folder_map.values())
 
 
 def update_folder_statuses(statuses: List[Dict[str, Any]], folder: str, status: str) -> List[Dict[str, Any]]:
+    normalized_folder = _normalize_folder_path(folder)
     updated = [dict(item) for item in statuses]
     for item in updated:
-        if item.get("folder") == folder:
+        if _normalize_folder_path(item.get("folder", "")) == normalized_folder:
             item["status"] = status
             break
     return updated
@@ -64,6 +123,8 @@ def convert_tree(
         "skipped_count": 0,
         "files": [],
     }
+    processed_paths: List[Path] = []
+    completed_paths: List[Path] = []
 
     for index, source_path in enumerate(discovered_files, start=1):
         if source_path.name.lower().startswith("converted") or source_path.suffix.lower() == ".webp":
@@ -88,7 +149,11 @@ def convert_tree(
             results["converted_count"] += 1
             results["files"].append({"path": str(source_path), "status": "converted", "output": str(output_path)})
 
+        processed_paths.append(source_path)
+        completed_paths.append(source_path)
+
         if on_progress is not None:
             on_progress(index, len(discovered_files), str(source_path))
 
+    results["folder_progress"] = build_folder_progress_summary(root_path, processed_paths, completed_paths)
     return results

@@ -27,6 +27,10 @@
    - Keep the process stateless for now: no database or history tracking is required for the initial experience.
 
 4. UX polish
+   - Use a fresh copy of a real sample-image folder for browser verification so the UI can be exercised against actual files before each significant change.
+   - The current browser validation flow is: run the fixture copy script, scan and convert the copied folder in the browser, and confirm that the converted files appear under the copied folder's Converted.webp output directory.
+
+5. Progress and status tracking
    - Show scan results and preview counts before conversion.
    - Provide start/stop controls and clear status messaging.
    - Keep the experience lightweight and practical, similar to the VideoTools UI.
