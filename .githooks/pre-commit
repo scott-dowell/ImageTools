@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+if [ -x .venv/Scripts/python.exe ]; then
+  .venv/Scripts/python.exe scripts/check_changelog_issues.py
+else
+  python scripts/check_changelog_issues.py
+fi
