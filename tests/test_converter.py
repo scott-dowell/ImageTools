@@ -204,6 +204,18 @@ def test_update_folder_statuses_for_progress_normalizes_dot_segments(tmp_path: P
     assert updated[0]["status"] == "converting"
 
 
+def test_on_progress_does_not_accumulate_path_history() -> None:
+    app_module._run_state.update({
+        "processed_paths": [Path("old.jpg")],
+        "completed_paths": [Path("old.jpg")],
+    })
+
+    app_module._on_progress(1, 3, "C:/tmp/example.jpg", {"status": "converted"})
+
+    assert app_module._run_state["processed_paths"] == []
+    assert app_module._run_state["completed_paths"] == []
+
+
 def test_on_progress_accumulates_folder_totals_across_files(tmp_path: Path) -> None:
     source_dir = tmp_path / "images"
     folder_dir = source_dir / "folder"

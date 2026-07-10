@@ -87,10 +87,6 @@ def _update_folder_statuses_for_progress(statuses: list[dict], current_path: str
 def _on_progress(processed: int, total: int, current_path: str, conversion_result: dict | None = None) -> None:
     with _run_lock:
         previous_path = _run_state.get("current_file") or None
-        processed_paths = list(_run_state.get("processed_paths", []))
-        completed_paths = list(_run_state.get("completed_paths", []))
-        processed_paths.append(Path(current_path))
-        completed_paths.append(Path(current_path))
 
         _run_state["processed"] = processed
         _run_state["total"] = total
@@ -98,8 +94,8 @@ def _on_progress(processed: int, total: int, current_path: str, conversion_resul
         _run_state["progress_percent"] = round((processed / total * 100.0) if total else 100.0, 1)
         _run_state["state"] = "running"
         _run_state["phase"] = "converting"
-        _run_state["processed_paths"] = processed_paths
-        _run_state["completed_paths"] = completed_paths
+        _run_state["processed_paths"] = []
+        _run_state["completed_paths"] = []
         if _run_state.get("folders"):
             _run_state["folders"], _ = _update_folder_statuses_for_progress(
                 _run_state["folders"],
