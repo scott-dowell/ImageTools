@@ -12,6 +12,8 @@
     pre { white-space: pre-wrap; word-break: break-word; }
     .folder-table { min-width: 980px; }
     .folder-table th, .folder-table td { white-space: nowrap; }
+    .results-scroll { max-height: 32rem; overflow: auto; }
+    .results-scroll table { margin-bottom: 0; }
   </style>
 </head>
 <body>
@@ -82,7 +84,7 @@
       folderSummary.innerHTML = `
         <div class="border rounded overflow-hidden">
           <div class="bg-light px-3 py-2 border-bottom small fw-semibold text-secondary">Folder results</div>
-          <div class="table-responsive" style="overflow-x: auto;">
+          <div class="table-responsive results-scroll">
             <table class="table table-sm table-hover align-middle mb-0 folder-table">
               <thead>
                 <tr>
