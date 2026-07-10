@@ -304,3 +304,27 @@ def test_on_progress_updates_folder_metrics_from_conversion_result(tmp_path: Pat
     assert folder_state["saved_bytes"] == 50
     assert folder_state["savings_percent"] == 50
     assert folder_state["progress"] == 100
+
+
+def test_run_state_exposes_session_summary_fields() -> None:
+    app_module._run_state.update({
+        "state": "running",
+        "phase": "converting",
+        "total": 3,
+        "processed": 2,
+        "converted_count": 1,
+        "skipped_count": 1,
+        "current_file": "C:/tmp/example.jpg",
+        "progress_percent": 66.7,
+        "saved_bytes": 0,
+    })
+
+    session_state = app_module._run_state_for_json()
+
+    assert session_state["total"] == 3
+    assert session_state["processed"] == 2
+    assert session_state["converted_count"] == 1
+    assert session_state["skipped_count"] == 1
+    assert session_state["progress_percent"] == 66.7
+    assert session_state["current_file"] == "C:/tmp/example.jpg"
+    assert session_state["saved_bytes"] == 0

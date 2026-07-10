@@ -22,6 +22,7 @@ _run_state = {
     "skipped_count": 0,
     "current_file": "",
     "progress_percent": 0.0,
+    "saved_bytes": 0,
     "started_at": None,
     "completed_at": None,
     "result": None,
@@ -116,6 +117,7 @@ def _on_progress(processed: int, total: int, current_path: str, conversion_resul
                                 folder_item["size_before_bytes_for_percent"] = int(folder_item.get("size_before_bytes_for_percent", 0) or 0) + size_before_bytes
                                 folder_item["size_after_bytes"] += int(conversion_result.get("size_after_bytes", 0) or 0)
                                 folder_item["saved_bytes"] += int(conversion_result.get("saved_bytes", 0) or 0)
+                                _run_state["saved_bytes"] = int(_run_state.get("saved_bytes", 0) or 0) + int(conversion_result.get("saved_bytes", 0) or 0)
                             elif conversion_result.get("status") in {"failed", "skipped"}:
                                 folder_item["skipped"] += 1
                         else:
@@ -131,16 +133,18 @@ def _on_progress(processed: int, total: int, current_path: str, conversion_resul
 
 def _run_conversion(root: str, quality: int) -> None:
     folder_summary = summarize_folder_status(root)
+    discovered_files = discover_image_files(root)
     _update_run_state(
         state="running",
         phase="converting",
         root=root,
-        total=0,
+        total=len(discovered_files),
         processed=0,
         converted_count=0,
         skipped_count=0,
         current_file="",
         progress_percent=0.0,
+        saved_bytes=0,
         started_at=datetime.utcnow(),
         completed_at=None,
         result=None,

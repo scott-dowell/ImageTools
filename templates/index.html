@@ -61,6 +61,37 @@
           </div>
           <div id="progressDetail" class="small text-muted mt-2">No conversion running.</div>
         </div>
+
+        <div class="row g-3 mt-3">
+          <div class="col-md-3">
+            <div class="border rounded p-3 h-100 bg-light">
+              <div class="small text-secondary">Total images</div>
+              <div id="summaryTotal" class="fs-4 fw-semibold">0</div>
+              <div id="summaryTotalSub" class="small text-muted">Waiting to scan</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="border rounded p-3 h-100 bg-light">
+              <div class="small text-secondary">Converted</div>
+              <div id="summaryConverted" class="fs-4 fw-semibold text-success">0</div>
+              <div id="summaryConvertedSub" class="small text-muted">0% complete</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="border rounded p-3 h-100 bg-light">
+              <div class="small text-secondary">Skipped</div>
+              <div id="summarySkipped" class="fs-4 fw-semibold text-warning">0</div>
+              <div id="summarySkippedSub" class="small text-muted">No failures</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="border rounded p-3 h-100 bg-light">
+              <div class="small text-secondary">Saved</div>
+              <div id="summarySaved" class="fs-4 fw-semibold text-primary">0 B</div>
+              <div id="summarySavedSub" class="small text-muted">Awaiting results</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -88,6 +119,14 @@
     const progressPercent = document.getElementById('progressPercent');
     const progressBar = document.getElementById('progressBar');
     const progressDetail = document.getElementById('progressDetail');
+    const summaryTotal = document.getElementById('summaryTotal');
+    const summaryTotalSub = document.getElementById('summaryTotalSub');
+    const summaryConverted = document.getElementById('summaryConverted');
+    const summaryConvertedSub = document.getElementById('summaryConvertedSub');
+    const summarySkipped = document.getElementById('summarySkipped');
+    const summarySkippedSub = document.getElementById('summarySkippedSub');
+    const summarySaved = document.getElementById('summarySaved');
+    const summarySavedSub = document.getElementById('summarySavedSub');
     let progressTimer = null;
 
     function getDisplayFolderPath(folderPath, rootPath) {
@@ -97,6 +136,25 @@
       if (!normalizedFolder.startsWith(normalizedRoot)) return normalizedFolder;
       const relativePath = normalizedFolder.slice(normalizedRoot.length).replace(/^\//, '');
       return relativePath || '.';
+    }
+
+    function updateSessionSummary(data) {
+      const total = Number(data.total || data.count || 0);
+      const processed = Number(data.processed || 0);
+      const converted = Number(data.converted_count || 0);
+      const skipped = Number(data.skipped_count || 0);
+      const savedBytes = Number(data.saved_bytes || 0);
+      const percentComplete = total > 0 ? Math.round((processed / total) * 100) : 0;
+      const convertedPercent = total > 0 ? Math.round((converted / total) * 100) : 0;
+
+      summaryTotal.textContent = total;
+      summaryTotalSub.textContent = data.root ? `Root: ${data.root}` : 'Waiting to scan';
+      summaryConverted.textContent = converted;
+      summaryConvertedSub.textContent = `${convertedPercent}% complete`;
+      summarySkipped.textContent = skipped;
+      summarySkippedSub.textContent = skipped > 0 ? `${skipped} skipped` : 'No failures';
+      summarySaved.textContent = formatBytes(savedBytes);
+      summarySavedSub.textContent = data.state === 'done' ? 'Session complete' : 'Live estimate';
     }
 
     function renderFolderResults(items) {
@@ -168,9 +226,11 @@
       const data = await callApi('/api/scan', { root });
       summary.textContent = data.error ? data.error : `${data.count} image(s) found under ${data.root}`;
       if (data.error) {
+        updateSessionSummary({ total: 0, processed: 0, converted_count: 0, skipped_count: 0, saved_bytes: 0, state: 'idle', root });
         folderSummary.innerHTML = '';
         resultsMeta.textContent = '';
       } else if (data.folders && data.folders.length) {
+        updateSessionSummary({ total: data.count || 0, processed: 0, converted_count: 0, skipped_count: 0, saved_bytes: 0, state: 'idle', root: data.root });
         renderFolderResults(data.folders);
         resultsMeta.innerHTML = '';
       } else {
@@ -184,6 +244,7 @@
       const data = await response.json();
       const isRunning = data.state === 'running';
       const percent = isRunning ? Math.round(data.progress_percent || 0) : 0;
+      updateSessionSummary(data);
       progressLabel.textContent = isRunning ? 'Converting…' : 'Idle';
       progressPercent.textContent = isRunning ? `${percent}%` : '0%';
       progressBar.style.width = isRunning ? `${percent}%` : '0%';
@@ -208,6 +269,7 @@
         return;
       }
       summary.textContent = 'Conversion started.';
+      updateSessionSummary({ total: 0, processed: 0, converted_count: 0, skipped_count: 0, saved_bytes: 0, state: 'running', root });
       resultsMeta.innerHTML = `<div class="small text-muted"><span class="fw-semibold">Run:</span> ${data.run ? data.run.root : root}</div>`;
       clearInterval(progressTimer);
       progressTimer = setInterval(updateProgress, 400);
