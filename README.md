@@ -13,6 +13,12 @@ A small Flask-based image conversion app inspired by the workflow and UI style o
 
 See [docs/implementation-plan.md](docs/implementation-plan.md) for the implementation roadmap.
 
+## Working conventions
+
+- Create a GitHub issue for each significant change.
+- Record the issue number in the changelog entry for that change.
+- Follow the issue -> changelog -> commit flow for incremental work.
+
 ## Quick start
 
 ```powershell
