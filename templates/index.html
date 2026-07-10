@@ -160,11 +160,12 @@
     async function updateProgress() {
       const response = await fetch('/api/progress');
       const data = await response.json();
-      const percent = Math.round(data.progress_percent || 0);
-      progressLabel.textContent = data.state === 'running' ? 'Converting…' : 'Idle';
-      progressPercent.textContent = `${percent}%`;
-      progressBar.style.width = `${percent}%`;
-      progressDetail.textContent = data.current_file ? `Working on ${data.current_file}` : 'No conversion running.';
+      const isRunning = data.state === 'running';
+      const percent = isRunning ? Math.round(data.progress_percent || 0) : 0;
+      progressLabel.textContent = isRunning ? 'Converting…' : 'Idle';
+      progressPercent.textContent = isRunning ? `${percent}%` : '0%';
+      progressBar.style.width = isRunning ? `${percent}%` : '0%';
+      progressDetail.textContent = isRunning && data.current_file ? `Working on ${data.current_file}` : 'No conversion running.';
       if (data.folders && data.folders.length) {
         renderFolderResults(data.folders);
       }

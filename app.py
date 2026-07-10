@@ -45,6 +45,9 @@ def _run_state_for_json() -> dict:
 def _update_run_state(**updates) -> None:
     with _run_lock:
         _run_state.update(updates)
+        if _run_state.get("state") in {"idle", "done"}:
+            _run_state["current_file"] = ""
+            _run_state["progress_percent"] = 0.0
 
 
 def _normalize_folder_path(path: str) -> str:

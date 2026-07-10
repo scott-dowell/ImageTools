@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 
 from PIL import Image
@@ -123,6 +124,28 @@ def test_webp_files_are_skipped(tmp_path: Path) -> None:
     assert result["converted_count"] == 1
     assert (source_dir / "existing.webp").exists()
     assert (source_dir / "sample.webp").exists()
+
+
+def test_update_run_state_clears_progress_when_done() -> None:
+    app_module._run_state.update({
+        "state": "running",
+        "phase": "converting",
+        "current_file": "C:/tmp/example.jpg",
+        "progress_percent": 100.0,
+    })
+
+    app_module._update_run_state(
+        state="done",
+        phase="complete",
+        converted_count=1,
+        skipped_count=0,
+        completed_at=datetime.utcnow(),
+        result={},
+    )
+
+    assert app_module._run_state["state"] == "done"
+    assert app_module._run_state["current_file"] == ""
+    assert app_module._run_state["progress_percent"] == 0.0
 
 
 def test_update_folder_statuses_transitions_folder_states() -> None:

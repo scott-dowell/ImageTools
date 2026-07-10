@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Reset progress UI to idle after conversion completes (Issue #15).
 - Fix folder metrics for in-place conversion progress (Issue #14).
 - Convert images in place instead of using Converted.webp folders (Issue #13).
 
