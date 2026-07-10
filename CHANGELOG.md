@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [Unreleased]`n`n- Convert images in place instead of using Converted.webp folders (Issue #13).
 
 - Initial ImageTools scaffold with Flask app, basic WebP conversion workflow, and starter UI.
 - Add progress reporting for image conversion runs (Issue #1).
