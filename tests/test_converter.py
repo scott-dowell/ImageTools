@@ -2,7 +2,12 @@ from pathlib import Path
 
 from PIL import Image
 
-from converter import convert_tree, discover_image_files, summarize_image_counts_by_folder
+from converter import (
+    convert_tree,
+    discover_image_files,
+    summarize_folder_status,
+    summarize_image_counts_by_folder,
+)
 
 
 def test_discover_and_convert_images(tmp_path: Path) -> None:
@@ -70,3 +75,14 @@ def test_summarize_image_counts_by_folder_returns_folder_rows_for_table(tmp_path
 
     assert summary[0]["folder"] == str(source_dir / "nested")
     assert summary[0]["count"] == 1
+
+
+def test_summarize_folder_status_defaults_to_pending(tmp_path: Path) -> None:
+    source_dir = tmp_path / "images"
+    (source_dir / "nested").mkdir(parents=True)
+    Image.new("RGB", (64, 64), color=(255, 0, 0)).save(source_dir / "nested" / "one.jpg")
+
+    summary = summarize_folder_status(source_dir)
+
+    assert summary[0]["folder"] == str(source_dir / "nested")
+    assert summary[0]["status"] == "pending"

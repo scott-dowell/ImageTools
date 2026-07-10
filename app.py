@@ -5,7 +5,7 @@ from pathlib import Path
 
 from flask import Flask, jsonify, render_template, request
 
-from converter import convert_tree, discover_image_files, summarize_image_counts_by_folder
+from converter import convert_tree, discover_image_files, summarize_folder_status, summarize_image_counts_by_folder
 
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
@@ -92,7 +92,7 @@ def scan_folder():
 
     root_path = Path(root)
     files = discover_image_files(root_path)
-    folder_summary = summarize_image_counts_by_folder(root_path)
+    folder_summary = summarize_folder_status(root_path)
     return jsonify({
         "root": str(root_path),
         "count": len(files),

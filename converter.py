@@ -37,6 +37,11 @@ def summarize_image_counts_by_folder(root: str | os.PathLike[str]) -> List[Dict[
     return summaries
 
 
+def summarize_folder_status(root: str | os.PathLike[str]) -> List[Dict[str, Any]]:
+    summaries = summarize_image_counts_by_folder(root)
+    return [{"folder": item["folder"], "count": item["count"], "status": "pending"} for item in summaries]
+
+
 def convert_tree(
     root: str | os.PathLike[str],
     quality: int = 85,
