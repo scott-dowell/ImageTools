@@ -6,5 +6,13 @@ All notable changes to this project will be documented in this file.
 
 - Initial ImageTools scaffold with Flask app, basic WebP conversion workflow, and starter UI.
 - Add progress reporting for image conversion runs (Issue #1).
-- Add a reusable real-image browser test fixture workflow (Issue #2).
-- Fix folder-level progress so converted counts, saved sizes, and percentage updates accumulate across the whole conversion run. (Issue #11)
+- Add folder-level scan summary (Issue #2).
+- Add folder results table (Issue #3).
+- Refine scan results layout (Issue #4).
+- Remove workflow notes card (Issue #5).
+- Add per-folder conversion status (Issue #6).
+- Remove redundant root label (Issue #7).
+- Update folder statuses during conversion (Issue #8).
+- Skip existing WebP files (Issue #9).
+- Add per-folder progress and saved-size metrics (Issue #10).
+- Add folder progress reporting and browser verification (Issue #11).

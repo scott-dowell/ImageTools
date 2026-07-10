@@ -19,6 +19,7 @@ See [docs/implementation-plan.md](docs/implementation-plan.md) for the implement
 - Record the issue number in the changelog entry for that change.
 - Follow the issue -> changelog -> commit flow for incremental work.
 - Prefer a red test first approach where practical, especially for new behavior or bug fixes.
+- A pre-commit check now verifies that the changelog references the current GitHub issues before a commit is allowed.
 
 ## Quick start
 
