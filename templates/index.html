@@ -105,10 +105,25 @@
         folderSummary.innerHTML = '';
       } else if (data.folders && data.folders.length) {
         folderSummary.innerHTML = `
-          <div class="small text-secondary mb-2">Folders with images</div>
-          <ul class="list-group list-group-sm">
-            ${data.folders.map((item) => `<li class="list-group-item d-flex justify-content-between align-items-center"><span>${item.folder}</span><span class="badge text-bg-primary">${item.count}</span></li>`).join('')}
-          </ul>
+          <div class="small text-secondary mb-2">Folder results</div>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th scope="col">Folder</th>
+                  <th scope="col" class="text-end">Images</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.folders.map((item) => `
+                  <tr>
+                    <td>${item.folder}</td>
+                    <td class="text-end">${item.count}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
         `;
       } else {
         folderSummary.innerHTML = '<div class="text-muted small">No image folders found.</div>';

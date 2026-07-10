@@ -59,3 +59,14 @@ def test_summarize_image_counts_by_folder(tmp_path: Path) -> None:
         {"folder": str(source_dir / "first"), "count": 2},
         {"folder": str(source_dir / "second"), "count": 1},
     ]
+
+
+def test_summarize_image_counts_by_folder_returns_folder_rows_for_table(tmp_path: Path) -> None:
+    source_dir = tmp_path / "images"
+    (source_dir / "nested").mkdir(parents=True)
+    Image.new("RGB", (64, 64), color=(255, 0, 0)).save(source_dir / "nested" / "one.jpg")
+
+    summary = summarize_image_counts_by_folder(source_dir)
+
+    assert summary[0]["folder"] == str(source_dir / "nested")
+    assert summary[0]["count"] == 1
