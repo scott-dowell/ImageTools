@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ImageTools</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #f6f8fa; }
+    .hero { background: linear-gradient(135deg, #0d6efd, #6f42c1); color: white; }
+    .card { border-radius: 1rem; }
+    pre { white-space: pre-wrap; word-break: break-word; }
+  </style>
+</head>
+<body>
+  <div class="container py-4">
+    <div class="hero card border-0 shadow-sm mb-4">
+      <div class="card-body p-4">
+        <h1 class="h3 mb-2">ImageTools</h1>
+        <p class="mb-0">Browse a folder tree and convert supported images to WebP in a structured output folder.</p>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-7">
+            <label class="form-label">Root folder</label>
+            <input id="rootFolder" class="form-control" placeholder="C:\\Photos" />
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Quality</label>
+            <input id="quality" class="form-control" type="number" min="1" max="100" value="85" />
+          </div>
+          <div class="col-md-3 d-flex gap-2">
+            <button id="scanBtn" class="btn btn-outline-primary w-100">Scan</button>
+            <button id="convertBtn" class="btn btn-primary w-100">Convert</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-white">Scan result</div>
+          <div class="card-body">
+            <div id="summary" class="text-secondary">No scan performed yet.</div>
+            <pre id="results" class="mt-3 mb-0"></pre>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-white">Workflow notes</div>
+          <div class="card-body">
+            <ul class="mb-0">
+              <li>Images are discovered recursively from the chosen root.</li>
+              <li>Each source folder gets a <code>Converted.webp</code> output directory.</li>
+              <li>Converted files are written as <code>.webp</code>.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const scanBtn = document.getElementById('scanBtn');
+    const convertBtn = document.getElementById('convertBtn');
+    const summary = document.getElementById('summary');
+    const results = document.getElementById('results');
+
+    async function callApi(path, payload) {
+      const response = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      return response.json();
+    }
+
+    scanBtn.addEventListener('click', async () => {
+      const root = document.getElementById('rootFolder').value;
+      const data = await callApi('/api/scan', { root });
+      summary.textContent = data.error ? data.error : `${data.count} image(s) found under ${data.root}`;
+      results.textContent = JSON.stringify(data, null, 2);
+    });
+
+    convertBtn.addEventListener('click', async () => {
+      const root = document.getElementById('rootFolder').value;
+      const quality = document.getElementById('quality').value;
+      const data = await callApi('/api/convert', { root, quality });
+      summary.textContent = data.error ? data.error : `${data.converted_count} image(s) converted`;
+      results.textContent = JSON.stringify(data, null, 2);
+    });
+  </script>
+</body>
+</html>
