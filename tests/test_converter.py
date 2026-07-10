@@ -27,9 +27,10 @@ def test_discover_and_convert_images(tmp_path: Path) -> None:
     result = convert_tree(source_dir)
 
     assert result["converted_count"] == 1
-    output_path = source_dir / "Converted.webp" / "sample.webp"
+    output_path = source_dir / "sample.webp"
     assert output_path.exists()
     assert output_path.stat().st_size > 0
+    assert not image_path.exists()
 
 
 def test_convert_tree_reports_progress(tmp_path: Path) -> None:
@@ -120,7 +121,8 @@ def test_webp_files_are_skipped(tmp_path: Path) -> None:
 
     result = convert_tree(source_dir)
     assert result["converted_count"] == 1
-    assert not (source_dir / "Converted.webp" / "existing.webp").exists()
+    assert (source_dir / "existing.webp").exists()
+    assert (source_dir / "sample.webp").exists()
 
 
 def test_update_folder_statuses_transitions_folder_states() -> None:

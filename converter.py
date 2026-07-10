@@ -130,9 +130,7 @@ def convert_tree(
         if source_path.name.lower().startswith("converted") or source_path.suffix.lower() == ".webp":
             continue
 
-        output_dir = source_path.parent / "Converted.webp"
-        output_dir.mkdir(exist_ok=True)
-        output_path = output_dir / f"{source_path.stem}.webp"
+        output_path = source_path.with_suffix(".webp")
 
         try:
             with Image.open(source_path) as img:
@@ -146,6 +144,7 @@ def convert_tree(
             results["skipped_count"] += 1
             results["files"].append({"path": str(source_path), "status": "failed"})
         else:
+            source_path.unlink(missing_ok=True)
             results["converted_count"] += 1
             results["files"].append({"path": str(source_path), "status": "converted", "output": str(output_path)})
 
