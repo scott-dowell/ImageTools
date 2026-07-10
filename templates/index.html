@@ -134,9 +134,10 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <div class="d-flex gap-2 mb-3">
+          <div class="d-flex gap-2 mb-3 flex-wrap">
             <button id="browseParentBtn" class="btn btn-outline-secondary btn-sm">Up one level</button>
             <button id="browseRefreshBtn" class="btn btn-outline-secondary btn-sm">Refresh</button>
+            <div id="browsePath" class="fw-semibold small text-secondary align-self-center"></div>
           </div>
           <div id="browseStatus" class="small text-muted mb-2">Loading folders…</div>
           <div id="browseList" class="list-group"></div>
@@ -158,6 +159,7 @@
     const browseModal = document.getElementById('browseModal');
     const browseList = document.getElementById('browseList');
     const browseStatus = document.getElementById('browseStatus');
+    const browsePath = document.getElementById('browsePath');
     const browseParentBtn = document.getElementById('browseParentBtn');
     const browseRefreshBtn = document.getElementById('browseRefreshBtn');
     const browseSelectBtn = document.getElementById('browseSelectBtn');
@@ -263,15 +265,16 @@
       const data = await response.json();
       browseCurrentPath = data.path || '';
       browseSelectedPath = data.path || '';
-      browseStatus.textContent = data.path ? `Browsing ${data.path}` : 'Browsing drives and folders';
+      browseStatus.textContent = data.path ? `Showing subfolders for ${data.path}` : 'Browsing drives and folders';
+      browsePath.textContent = data.path || 'Root';
       if (!data.dirs || !data.dirs.length) {
         browseList.innerHTML = '<div class="list-group-item text-muted">No subfolders found.</div>';
         return;
       }
       browseList.innerHTML = data.dirs.map((dir) => `
         <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-path="${dir.full_path}">
-          <span>${dir.name}</span>
-          <span class="small text-muted">${dir.has_children ? 'folder' : 'empty'}</span>
+          <span><i class="bi bi-folder2-open me-2 text-warning"></i>${dir.name}</span>
+          <span class="small text-muted">${dir.has_children ? 'Open' : 'Empty'}</span>
         </button>
       `).join('');
     }
