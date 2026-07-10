@@ -89,6 +89,21 @@ def test_summarize_folder_status_defaults_to_pending(tmp_path: Path) -> None:
     assert summary[0]["status"] == "pending"
 
 
+def test_webp_files_are_skipped(tmp_path: Path) -> None:
+    source_dir = tmp_path / "images"
+    source_dir.mkdir()
+
+    Image.new("RGB", (64, 64), color=(255, 0, 0)).save(source_dir / "sample.jpg")
+    Image.new("RGB", (64, 64), color=(0, 255, 0)).save(source_dir / "existing.webp")
+
+    discovered = discover_image_files(source_dir)
+    assert [path.name for path in discovered] == ["sample.jpg"]
+
+    result = convert_tree(source_dir)
+    assert result["converted_count"] == 1
+    assert not (source_dir / "Converted.webp" / "existing.webp").exists()
+
+
 def test_update_folder_statuses_transitions_folder_states() -> None:
     statuses = [
         {"folder": "C:/one", "status": "pending"},

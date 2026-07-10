@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, List
 
 from PIL import Image, UnidentifiedImageError
 
-SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tif", ".tiff", ".webp"}
+SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tif", ".tiff"}
 ProgressCallback = Callable[[int, int, str], None]
 
 
@@ -66,7 +66,7 @@ def convert_tree(
     }
 
     for index, source_path in enumerate(discovered_files, start=1):
-        if source_path.name.lower().startswith("converted"):
+        if source_path.name.lower().startswith("converted") or source_path.suffix.lower() == ".webp":
             continue
 
         output_dir = source_path.parent / "Converted.webp"
