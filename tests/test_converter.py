@@ -21,3 +21,24 @@ def test_discover_and_convert_images(tmp_path: Path) -> None:
     output_path = source_dir / "Converted.webp" / "sample.webp"
     assert output_path.exists()
     assert output_path.stat().st_size > 0
+
+
+def test_convert_tree_reports_progress(tmp_path: Path) -> None:
+    source_dir = tmp_path / "images"
+    source_dir.mkdir()
+
+    for name, color in (("one.png", (255, 0, 0)), ("two.jpg", (0, 255, 0))):
+        image_path = source_dir / name
+        Image.new("RGB", (64, 64), color=color).save(image_path)
+
+    events = []
+
+    def on_progress(processed: int, total: int, current_path: str) -> None:
+        events.append((processed, total, current_path))
+
+    result = convert_tree(source_dir, on_progress=on_progress)
+
+    assert result["converted_count"] == 2
+    assert len(events) >= 2
+    assert events[0][0] == 1
+    assert events[-1][0] == 2

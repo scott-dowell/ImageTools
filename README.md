@@ -18,6 +18,7 @@ See [docs/implementation-plan.md](docs/implementation-plan.md) for the implement
 - Create a GitHub issue for each significant change.
 - Record the issue number in the changelog entry for that change.
 - Follow the issue -> changelog -> commit flow for incremental work.
+- Prefer a red test first approach where practical, especially for new behavior or bug fixes.
 
 ## Quick start
 

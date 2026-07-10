@@ -37,6 +37,16 @@
             <button id="convertBtn" class="btn btn-primary w-100">Convert</button>
           </div>
         </div>
+        <div class="mt-3">
+          <div class="d-flex justify-content-between small text-secondary mb-1">
+            <span id="progressLabel">Idle</span>
+            <span id="progressPercent">0%</span>
+          </div>
+          <div class="progress" style="height: 8px;">
+            <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+          </div>
+          <div id="progressDetail" class="small text-muted mt-2">No conversion running.</div>
+        </div>
       </div>
     </div>
 
@@ -70,6 +80,11 @@
     const convertBtn = document.getElementById('convertBtn');
     const summary = document.getElementById('summary');
     const results = document.getElementById('results');
+    const progressLabel = document.getElementById('progressLabel');
+    const progressPercent = document.getElementById('progressPercent');
+    const progressBar = document.getElementById('progressBar');
+    const progressDetail = document.getElementById('progressDetail');
+    let progressTimer = null;
 
     async function callApi(path, payload) {
       const response = await fetch(path, {
@@ -87,12 +102,34 @@
       results.textContent = JSON.stringify(data, null, 2);
     });
 
+    async function updateProgress() {
+      const response = await fetch('/api/progress');
+      const data = await response.json();
+      const percent = Math.round(data.progress_percent || 0);
+      progressLabel.textContent = data.state === 'running' ? 'Converting…' : 'Idle';
+      progressPercent.textContent = `${percent}%`;
+      progressBar.style.width = `${percent}%`;
+      progressDetail.textContent = data.current_file ? `Working on ${data.current_file}` : 'No conversion running.';
+      if (data.state === 'done') {
+        clearInterval(progressTimer);
+        summary.textContent = `${data.converted_count} image(s) converted, ${data.skipped_count} skipped`;
+        results.textContent = JSON.stringify(data.result, null, 2);
+      }
+    }
+
     convertBtn.addEventListener('click', async () => {
       const root = document.getElementById('rootFolder').value;
       const quality = document.getElementById('quality').value;
       const data = await callApi('/api/convert', { root, quality });
-      summary.textContent = data.error ? data.error : `${data.converted_count} image(s) converted`;
+      if (data.error) {
+        summary.textContent = data.error;
+        results.textContent = JSON.stringify(data, null, 2);
+        return;
+      }
+      summary.textContent = 'Conversion started.';
       results.textContent = JSON.stringify(data, null, 2);
+      clearInterval(progressTimer);
+      progressTimer = setInterval(updateProgress, 400);
     });
   </script>
 </body>
