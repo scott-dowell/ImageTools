@@ -5,7 +5,7 @@ from pathlib import Path
 
 from flask import Flask, jsonify, render_template, request
 
-from converter import convert_tree, discover_image_files, summarize_folder_status, summarize_image_counts_by_folder
+from converter import convert_tree, discover_image_files, summarize_folder_status, update_folder_statuses
 
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
@@ -16,6 +16,7 @@ _run_state = {
     "phase": "idle",
     "root": "",
     "total": 0,
+    "folders": [],
     "processed": 0,
     "converted_count": 0,
     "skipped_count": 0,
@@ -50,9 +51,13 @@ def _on_progress(processed: int, total: int, current_path: str) -> None:
         _run_state["progress_percent"] = round((processed / total * 100.0) if total else 100.0, 1)
         _run_state["state"] = "running"
         _run_state["phase"] = "converting"
+        if _run_state.get("folders"):
+            folder_path = str(Path(current_path).parent)
+            _run_state["folders"] = update_folder_statuses(_run_state["folders"], folder_path, "converting")
 
 
 def _run_conversion(root: str, quality: int) -> None:
+    folder_summary = summarize_folder_status(root)
     _update_run_state(
         state="running",
         phase="converting",
@@ -66,8 +71,14 @@ def _run_conversion(root: str, quality: int) -> None:
         started_at=datetime.utcnow(),
         completed_at=None,
         result=None,
+        folders=folder_summary,
     )
     result = convert_tree(root, quality=quality, on_progress=_on_progress)
+    with _run_lock:
+        for folder in _run_state.get("folders", []):
+            if folder.get("status") == "converting":
+                folder["status"] = "done"
+
     _update_run_state(
         state="done",
         phase="complete",

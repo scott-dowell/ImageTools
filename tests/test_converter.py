@@ -7,6 +7,7 @@ from converter import (
     discover_image_files,
     summarize_folder_status,
     summarize_image_counts_by_folder,
+    update_folder_statuses,
 )
 
 
@@ -86,3 +87,16 @@ def test_summarize_folder_status_defaults_to_pending(tmp_path: Path) -> None:
 
     assert summary[0]["folder"] == str(source_dir / "nested")
     assert summary[0]["status"] == "pending"
+
+
+def test_update_folder_statuses_transitions_folder_states() -> None:
+    statuses = [
+        {"folder": "C:/one", "status": "pending"},
+        {"folder": "C:/two", "status": "pending"},
+    ]
+
+    updated = update_folder_statuses(statuses, "C:/one", "converting")
+    updated = update_folder_statuses(updated, "C:/one", "done")
+
+    assert updated[0]["status"] == "done"
+    assert updated[1]["status"] == "pending"

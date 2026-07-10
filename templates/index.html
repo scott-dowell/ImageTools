@@ -133,6 +133,33 @@
       progressPercent.textContent = `${percent}%`;
       progressBar.style.width = `${percent}%`;
       progressDetail.textContent = data.current_file ? `Working on ${data.current_file}` : 'No conversion running.';
+      if (data.folders && data.folders.length) {
+        folderSummary.innerHTML = `
+          <div class="border rounded overflow-hidden">
+            <div class="bg-light px-3 py-2 border-bottom small fw-semibold text-secondary">Folder results</div>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th scope="col">Folder</th>
+                    <th scope="col" class="text-end">Images</th>
+                    <th scope="col">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${data.folders.map((item) => `
+                    <tr>
+                      <td class="text-break">${item.folder}</td>
+                      <td class="text-end fw-semibold">${item.count}</td>
+                      <td><span class="badge text-bg-secondary">${item.status || 'pending'}</span></td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
       if (data.state === 'done') {
         clearInterval(progressTimer);
         summary.textContent = `${data.converted_count} image(s) converted, ${data.skipped_count} skipped`;

@@ -42,6 +42,15 @@ def summarize_folder_status(root: str | os.PathLike[str]) -> List[Dict[str, Any]
     return [{"folder": item["folder"], "count": item["count"], "status": "pending"} for item in summaries]
 
 
+def update_folder_statuses(statuses: List[Dict[str, Any]], folder: str, status: str) -> List[Dict[str, Any]]:
+    updated = [dict(item) for item in statuses]
+    for item in updated:
+        if item.get("folder") == folder:
+            item["status"] = status
+            break
+    return updated
+
+
 def convert_tree(
     root: str | os.PathLike[str],
     quality: int = 85,
