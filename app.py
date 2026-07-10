@@ -23,6 +23,7 @@ _run_state = {
     "current_file": "",
     "progress_percent": 0.0,
     "saved_bytes": 0,
+    "eta_seconds": 0,
     "started_at": None,
     "completed_at": None,
     "result": None,
@@ -38,6 +39,21 @@ def _run_state_for_json() -> dict:
             value = state.get(key)
             if isinstance(value, datetime):
                 state[key] = value.isoformat()
+        if state.get("state") == "running" and state.get("started_at") and state.get("total"):
+            started_at = state.get("started_at")
+            if isinstance(started_at, datetime):
+                elapsed_seconds = max(1, int((datetime.utcnow() - started_at).total_seconds()))
+            else:
+                elapsed_seconds = 1
+            processed = int(state.get("processed", 0) or 0)
+            total = int(state.get("total", 0) or 0)
+            if processed > 0 and total > processed:
+                eta_seconds = int((elapsed_seconds / processed) * (total - processed))
+            else:
+                eta_seconds = 0
+            state["eta_seconds"] = max(0, eta_seconds)
+        else:
+            state["eta_seconds"] = 0
         state.pop("processed_paths", None)
         state.pop("completed_paths", None)
         return state

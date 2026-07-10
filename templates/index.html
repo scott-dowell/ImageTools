@@ -91,6 +91,20 @@
               <div id="summarySavedSub" class="small text-muted">Awaiting results</div>
             </div>
           </div>
+          <div class="col-md-12 mt-2">
+            <div class="border rounded p-3 bg-light">
+              <div class="row g-3">
+                <div class="col-md-8">
+                  <div class="small text-secondary">Current file</div>
+                  <div id="summaryCurrentFile" class="fw-semibold text-truncate">Waiting to start</div>
+                </div>
+                <div class="col-md-4">
+                  <div class="small text-secondary">ETA</div>
+                  <div id="summaryEta" class="fw-semibold">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -127,6 +141,8 @@
     const summarySkippedSub = document.getElementById('summarySkippedSub');
     const summarySaved = document.getElementById('summarySaved');
     const summarySavedSub = document.getElementById('summarySavedSub');
+    const summaryCurrentFile = document.getElementById('summaryCurrentFile');
+    const summaryEta = document.getElementById('summaryEta');
     let progressTimer = null;
 
     function getDisplayFolderPath(folderPath, rootPath) {
@@ -155,6 +171,9 @@
       summarySkippedSub.textContent = skipped > 0 ? `${skipped} skipped` : 'No failures';
       summarySaved.textContent = formatBytes(savedBytes);
       summarySavedSub.textContent = data.state === 'done' ? 'Session complete' : 'Live estimate';
+      const currentFile = data.current_file ? String(data.current_file).split('\\').pop() : 'Waiting to start';
+      summaryCurrentFile.textContent = data.current_file || 'Waiting to start';
+      summaryEta.textContent = data.state === 'running' && data.eta_seconds ? formatEta(data.eta_seconds) : '—';
     }
 
     function renderFolderResults(items) {
@@ -198,6 +217,16 @@
           </div>
         </div>
       `;
+    }
+
+    function formatEta(seconds) {
+      if (!seconds) return 'Calculating…';
+      const mins = Math.floor(seconds / 60);
+      if (mins >= 60) {
+        const hours = Math.floor(mins / 60);
+        return `${hours}h ${mins % 60}m remaining`;
+      }
+      return `${mins}m remaining`;
     }
 
     function formatBytes(bytes) {

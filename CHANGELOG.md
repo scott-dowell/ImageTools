@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Add live current-file and ETA summary cards during conversion (Issue #19).
 - Add live session progress cards that update during conversion (Issue #18).
 - Stabilize large conversion progress state to avoid page-load failures during long runs (Issue #17).
 - Limit scan results table height and add scrollbars (Issue #16).

@@ -328,3 +328,17 @@ def test_run_state_exposes_session_summary_fields() -> None:
     assert session_state["progress_percent"] == 66.7
     assert session_state["current_file"] == "C:/tmp/example.jpg"
     assert session_state["saved_bytes"] == 0
+
+
+def test_run_state_includes_eta_seconds_for_running_jobs() -> None:
+    app_module._run_state.update({
+        "state": "running",
+        "total": 10,
+        "processed": 2,
+        "started_at": datetime.utcnow(),
+    })
+
+    session_state = app_module._run_state_for_json()
+
+    assert isinstance(session_state["eta_seconds"], int)
+    assert session_state["eta_seconds"] >= 0
