@@ -148,6 +148,23 @@ def test_update_run_state_clears_progress_when_done() -> None:
     assert app_module._run_state["progress_percent"] == 0.0
 
 
+def test_run_conversion_leaves_completed_folders_in_done_state(tmp_path: Path) -> None:
+    source_dir = tmp_path / "images"
+    folder_dir = source_dir / "folder"
+    folder_dir.mkdir(parents=True)
+
+    image_path = folder_dir / "one.jpg"
+    Image.new("RGB", (64, 64), color=(255, 0, 0)).save(image_path)
+
+    thread = app_module.threading.Thread(target=app_module._run_conversion, args=(str(source_dir), 85))
+    thread.start()
+    thread.join(timeout=5)
+
+    assert app_module._run_state["state"] == "done"
+    completed_folder = next(item for item in app_module._run_state["folders"] if item["folder"] == str(folder_dir))
+    assert completed_folder["status"] == "done"
+
+
 def test_update_folder_statuses_transitions_folder_states() -> None:
     statuses = [
         {"folder": "C:/one", "status": "pending"},

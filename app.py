@@ -154,12 +154,14 @@ def _run_conversion(root: str, quality: int) -> None:
     )
     result = convert_tree(root, quality=quality, on_progress=_on_progress)
     with _run_lock:
-        for folder in _run_state.get("folders", []):
-            if folder.get("status") == "converting":
+        folder_progress = result.get("folder_progress", _run_state.get("folders", []))
+        for folder in folder_progress:
+            if folder.get("status") in {"converting", "pending"} and folder.get("progress", 0) >= 100:
+                folder["status"] = "done"
+            elif folder.get("status") == "converting":
                 folder["status"] = "done"
 
-    with _run_lock:
-        _run_state["folders"] = result.get("folder_progress", _run_state.get("folders", []))
+        _run_state["folders"] = folder_progress
 
     _update_run_state(
         state="done",

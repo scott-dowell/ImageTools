@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - Reset progress UI to idle after conversion completes (Issue #15).
 - Fix folder metrics for in-place conversion progress (Issue #14).
 - Convert images in place instead of using Converted.webp folders (Issue #13).
+- Keep completed folders marked as done after a conversion run finishes (Issue #8).
 
 - Initial ImageTools scaffold with Flask app, basic WebP conversion workflow, and starter UI.
 - Add progress reporting for image conversion runs (Issue #1).
