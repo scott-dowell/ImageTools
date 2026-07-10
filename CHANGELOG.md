@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 - Limit scan results table height and add scrollbars (Issue #16).
+- Show folder paths relative to the selected root in the results table (Issue #16).
 - Reset progress UI to idle after conversion completes (Issue #15).
 - Fix folder metrics for in-place conversion progress (Issue #14).
 - Convert images in place instead of using Converted.webp folders (Issue #13).
