@@ -2,7 +2,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from converter import convert_tree, discover_image_files
+from converter import convert_tree, discover_image_files, summarize_image_counts_by_folder
 
 
 def test_discover_and_convert_images(tmp_path: Path) -> None:
@@ -42,3 +42,20 @@ def test_convert_tree_reports_progress(tmp_path: Path) -> None:
     assert len(events) >= 2
     assert events[0][0] == 1
     assert events[-1][0] == 2
+
+
+def test_summarize_image_counts_by_folder(tmp_path: Path) -> None:
+    source_dir = tmp_path / "images"
+    (source_dir / "first").mkdir(parents=True)
+    (source_dir / "second").mkdir(parents=True)
+
+    Image.new("RGB", (64, 64), color=(255, 0, 0)).save(source_dir / "first" / "one.jpg")
+    Image.new("RGB", (64, 64), color=(0, 255, 0)).save(source_dir / "first" / "two.png")
+    Image.new("RGB", (64, 64), color=(0, 0, 255)).save(source_dir / "second" / "three.jpeg")
+
+    summary = summarize_image_counts_by_folder(source_dir)
+
+    assert summary == [
+        {"folder": str(source_dir / "first"), "count": 2},
+        {"folder": str(source_dir / "second"), "count": 1},
+    ]

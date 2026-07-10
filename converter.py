@@ -23,6 +23,20 @@ def discover_image_files(root: str | os.PathLike[str]) -> List[Path]:
     return sorted(discovered)
 
 
+def summarize_image_counts_by_folder(root: str | os.PathLike[str]) -> List[Dict[str, Any]]:
+    root_path = Path(root)
+    if not root_path.exists():
+        return []
+
+    folders: Dict[Path, int] = {}
+    for path in root_path.rglob("*"):
+        if path.is_file() and path.suffix.lower() in SUPPORTED_EXTENSIONS:
+            folders[path.parent] = folders.get(path.parent, 0) + 1
+
+    summaries = [{"folder": str(folder), "count": count} for folder, count in sorted(folders.items(), key=lambda item: str(item[0]))]
+    return summaries
+
+
 def convert_tree(
     root: str | os.PathLike[str],
     quality: int = 85,
