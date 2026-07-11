@@ -50,45 +50,6 @@
 
   <div class="container py-4">
 
-    <div class="card shadow-sm mb-4">
-      <div class="card-body">
-        <div class="row g-3 align-items-end">
-          <div class="col-md-7">
-            <label class="form-label text-secondary small fw-bold">Root folder</label>
-            <div class="input-group">
-              <input id="rootFolder" class="form-control" placeholder="C:\\Photos" />
-              <button id="browseBtn" class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#browseModal">Browse…</button>
-            </div>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label text-secondary small fw-bold">Quality</label>
-            <input id="quality" class="form-control" type="number" min="1" max="100" value="85" />
-          </div>
-          <div class="col-md-3 d-flex gap-2">
-            <button id="scanBtn" class="btn btn-outline-primary w-100">
-              <i class="bi bi-search me-1"></i>Scan
-            </button>
-            <button id="convertBtn" class="btn btn-primary w-100">
-              <i class="bi bi-play-fill me-1"></i>Convert
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card shadow-sm mb-4">
-      <div class="card-body">
-        <div class="d-flex justify-content-between small text-secondary mb-1">
-          <span id="progressLabel"><i class="bi bi-info-circle me-1"></i>Idle</span>
-          <span id="progressPercent">0%</span>
-        </div>
-        <div class="progress" style="height: 10px; background-color: #e9ecef;">
-          <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
-        </div>
-        <div id="progressDetail" class="small text-muted mt-2">No conversion running.</div>
-      </div>
-    </div>
-
     <div class="row g-3 mb-4">
       <div class="col-md-3">
         <div class="card shadow-sm h-100 border-0 border-start border-4 border-primary">
@@ -151,6 +112,45 @@
                 <div id="summaryEta" class="fw-semibold small">—</div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between small text-secondary mb-1">
+          <span id="progressLabel"><i class="bi bi-info-circle me-1"></i>Idle</span>
+          <span id="progressPercent">0%</span>
+        </div>
+        <div class="progress" style="height: 10px; background-color: #e9ecef;">
+          <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+        </div>
+        <div id="progressDetail" class="small text-muted mt-2">No conversion running.</div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-7">
+            <label class="form-label text-secondary small fw-bold">Root folder</label>
+            <div class="input-group">
+              <input id="rootFolder" class="form-control" placeholder="C:\\Photos" />
+              <button id="browseBtn" class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#browseModal">Browse…</button>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label text-secondary small fw-bold">Quality</label>
+            <input id="quality" class="form-control" type="number" min="1" max="100" value="85" />
+          </div>
+          <div class="col-md-3 d-flex gap-2">
+            <button id="scanBtn" class="btn btn-outline-primary w-100">
+              <i class="bi bi-search me-1"></i>Scan
+            </button>
+            <button id="convertBtn" class="btn btn-primary w-100">
+              <i class="bi bi-play-fill me-1"></i>Convert
+            </button>
           </div>
         </div>
       </div>
