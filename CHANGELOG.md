@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Revamp folder picker to match canonical VideoTools implementation with breadcrumbs, drive enumeration, and friendly labels (Issue #21).
 - Fix folder-browser parent navigation so the picker moves up to the parent folder instead of reloading the current view (Issue #20).
 - Harden folder browsing at drive roots so inaccessible folders no longer break navigation when moving up from a subfolder (Issue #20).
 - Add folder browser selection to the UI so users can choose a root folder without typing the path manually (Issue #20).
