@@ -149,9 +149,6 @@
             <button id="scanBtn" class="btn btn-outline-primary w-100">
               <i class="bi bi-search me-1"></i>Scan
             </button>
-            <button id="convertBtn" class="btn btn-primary w-100">
-              <i class="bi bi-play-fill me-1"></i>Convert
-            </button>
           </div>
         </div>
       </div>
@@ -162,18 +159,25 @@
         <i class="bi bi-play-circle me-2 text-primary"></i>Controls
       </div>
       <div class="card-body">
-        <div class="row g-3 align-items-center">
-          <div class="col-auto d-flex gap-2">
-            <button id="pauseBtn" class="btn btn-outline-warning btn-sm" style="width: 100px;" disabled>
-              <i class="bi bi-pause-fill me-1"></i>Pause
-            </button>
-            <button id="stopBtn" class="btn btn-outline-danger btn-sm" style="width: 100px;" disabled>
-              <i class="bi bi-stop-fill me-1"></i>Stop
-            </button>
+        <div class="d-grid gap-2">
+          <button id="convertBtn" class="btn btn-primary w-100">
+            <i class="bi bi-play-fill me-1"></i>Convert
+          </button>
+          <div class="row g-2">
+            <div class="col-6">
+              <button id="pauseBtn" class="btn btn-outline-warning w-100 btn-sm" disabled>
+                <i class="bi bi-pause-fill me-1"></i>Pause
+              </button>
+            </div>
+            <div class="col-6">
+              <button id="stopBtn" class="btn btn-outline-danger w-100 btn-sm" disabled>
+                <i class="bi bi-stop-fill me-1"></i>Stop
+              </button>
+            </div>
           </div>
-          <div class="col text-end text-muted small">
-            Current file will always complete before pausing or stopping.
-          </div>
+        </div>
+        <div class="text-center text-muted small mt-2">
+          Current file will always complete before pausing or stopping.
         </div>
       </div>
     </div>
