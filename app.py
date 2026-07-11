@@ -97,6 +97,22 @@ def _normalize_folder_path(path: str) -> str:
     return str(Path(path).resolve()).replace("\\", "/")
 
 
+def _path_has_directory_children(path: Path) -> bool:
+    try:
+        with os.scandir(path) as entries:
+            for entry in entries:
+                if entry.name.startswith("."):
+                    continue
+                try:
+                    if entry.is_dir():
+                        return True
+                except (PermissionError, OSError):
+                    continue
+    except (PermissionError, FileNotFoundError, NotADirectoryError, OSError):
+        return False
+    return False
+
+
 def _resolve_folder_path(path: str) -> str:
     path_obj = Path(path)
     resolved_path = path_obj.resolve()
@@ -254,12 +270,17 @@ def browse_folder():
         resolved_path = Path.cwd()
 
     directories = []
-    for child in sorted(resolved_path.iterdir(), key=lambda item: item.name.lower()):
-        if child.is_dir() and not child.name.startswith("."):
+    try:
+        children = sorted(resolved_path.iterdir(), key=lambda item: item.name.lower())
+    except (PermissionError, FileNotFoundError, NotADirectoryError, OSError):
+        children = []
+
+    for child in children:
+        if not child.name.startswith(".") and child.is_dir():
             directories.append({
                 "name": child.name,
                 "full_path": str(child),
-                "has_children": any(grandchild.is_dir() for grandchild in child.iterdir()),
+                "has_children": _path_has_directory_children(child),
             })
 
     return jsonify({

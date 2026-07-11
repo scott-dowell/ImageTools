@@ -42,6 +42,33 @@ def test_write_uploaded_folder_preserves_relative_paths(tmp_path: Path) -> None:
     assert (written_root / "README.txt").exists()
 
 
+def test_browse_folder_skips_children_that_raise_permission_error(monkeypatch: object, tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    blocked_dir = root / "blocked"
+    safe_dir = root / "safe"
+    blocked_dir.mkdir(parents=True)
+    safe_dir.mkdir()
+
+    real_iterdir = Path.iterdir
+
+    def fake_iterdir(self: Path):
+        if self == root:
+            return iter([blocked_dir, safe_dir])
+        if self == blocked_dir:
+            raise PermissionError("denied")
+        return real_iterdir(self)
+
+    monkeypatch.setattr(Path, "iterdir", fake_iterdir)
+
+    client = app_module.app.test_client()
+    response = client.get("/api/browse", query_string={"path": str(root)})
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["path"] == str(root)
+    assert "safe" in [item["name"] for item in payload["dirs"]]
+
+
 def test_discover_and_convert_images(tmp_path: Path) -> None:
     source_dir = tmp_path / "images"
     source_dir.mkdir()
