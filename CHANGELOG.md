@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #41: Apply a strict maxHeight to the results-scroll container to ensure the table is always self-contained and never pushes outside the card or overlaps the footer.
+- Issue #40: Fix CSS stacking and height constraints to ensure the results card is always clipped by its container and never overlaps the footer.
+- Issue #39: Enforce strict height constraints and overflow rules on dashboard layout to prevent results card from overlapping the footer.
 - Issue #38: Fix dashboard layout to prevent scan results from overlapping the footer by properly using flexbox margins and layout constraints.
 - Issue #37: Restructure scan results UI and CSS to ensure the table scrolls vertically within the card and does not overlap the footer.
 - Issue #36: Align navbar brand to the left and settings/status to the right using a fluid layout to match VideoTools.
