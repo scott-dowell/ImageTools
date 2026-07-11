@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #47: Align summary card groups with the vertical columns of the main dashboard layout for better visual continuity.
 - Issue #46: Reorganize summary cards into "Source" (Folder Stats) and "Results" (Conversion Progress) groups for better visual hierarchy.
 - Issue #45: Add a new summary card for Folder count and Total images size to the dashboard header.
 - Issue #44: Fix hidden overflow cropping on the dashboard row that was clipping card bottom borders regardless of content height.
