@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #35: Relocate the control disclaimer text to the Controls card header.
 - Issue #34: Move scan result summary text to the card header for better space utilization.
 - Issue #33: Widen scan results table to eliminate horizontal scroll and adjust height to fill the card.
 - Issue #32: Implement a two-column dashboard layout, moving Scan results to a dedicated right-hand panel.
