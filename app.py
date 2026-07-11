@@ -198,10 +198,13 @@ def _on_progress(processed: int, total: int, current_path: str, conversion_resul
                                 folder_item["size_after_bytes"] += int(conversion_result.get("size_after_bytes", 0) or 0)
                                 folder_item["saved_bytes"] += int(conversion_result.get("saved_bytes", 0) or 0)
                                 _run_state["saved_bytes"] = int(_run_state.get("saved_bytes", 0) or 0) + int(conversion_result.get("saved_bytes", 0) or 0)
+                                _run_state["converted_count"] = int(_run_state.get("converted_count", 0) or 0) + 1
                             elif conversion_result.get("status") in {"failed", "skipped"}:
                                 folder_item["skipped"] += 1
+                                _run_state["skipped_count"] = int(_run_state.get("skipped_count", 0) or 0) + 1
                         else:
                             folder_item["converted"] += 1
+                            _run_state["converted_count"] = int(_run_state.get("converted_count", 0) or 0) + 1
                         folder_item["progress"] = int(round((folder_item.get("converted", 0) + folder_item.get("skipped", 0)) / folder_item["count"] * 100)) if folder_item["count"] else 100
                         percent_baseline = folder_item.get("size_before_bytes_for_percent", 0) or folder_item.get("size_before_bytes", 0)
                         if percent_baseline > 0:
