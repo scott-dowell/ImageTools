@@ -55,6 +55,8 @@ _run_state = {
     "result": None,
     "processed_paths": [],
     "completed_paths": [],
+    "paused": False,
+    "stop_requested": False,
 }
 
 
@@ -152,8 +154,19 @@ def _update_folder_statuses_for_progress(statuses: list[dict], current_path: str
     return updated, current_folder
 
 
-def _on_progress(processed: int, total: int, current_path: str, conversion_result: dict | None = None) -> None:
+def _on_progress(processed: int, total: int, current_path: str, conversion_result: dict | None = None) -> str | None:
+    # Handle pause/stop
+    import time
+    while True:
+        with _run_lock:
+            if not _run_state.get("paused") or _run_state.get("stop_requested"):
+                break
+        time.sleep(0.5)
+
     with _run_lock:
+        if _run_state.get("stop_requested"):
+            return "stop"
+        
         previous_path = _run_state.get("current_file") or None
 
         _run_state["processed"] = processed
@@ -196,6 +209,7 @@ def _on_progress(processed: int, total: int, current_path: str, conversion_resul
                             folder_item["savings_percent"] = max(0, min(100, folder_item["savings_percent"]))
                         break
             _run_state["folders"] = folder_summaries
+    return None
 
 
 def _run_conversion(root: str, quality: int) -> None:
@@ -218,6 +232,8 @@ def _run_conversion(root: str, quality: int) -> None:
         folders=folder_summary,
         processed_paths=[],
         completed_paths=[],
+        paused=False,
+        stop_requested=False,
     )
     result = convert_tree(root, quality=quality, on_progress=_on_progress)
     with _run_lock:
@@ -265,6 +281,21 @@ def scan_folder():
         "files": [str(path) for path in files[:200]],
         "folders": folder_summary,
     })
+
+
+@app.route("/api/pause", methods=["POST"])
+def pause_conversion():
+    with _run_lock:
+        is_paused = not _run_state.get("paused", False)
+        _run_state["paused"] = is_paused
+    return jsonify({"paused": is_paused})
+
+
+@app.route("/api/stop", methods=["POST"])
+def stop_conversion():
+    with _run_lock:
+        _run_state["stop_requested"] = True
+    return jsonify({"stop_requested": True})
 
 
 @app.route("/api/browse", methods=["GET"])

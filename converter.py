@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, List
 from PIL import Image, UnidentifiedImageError
 
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tif", ".tiff"}
-ProgressCallback = Callable[[int, int, str], None]
+ProgressCallback = Callable[[int, int, str, Dict[str, Any] | None], str | None]
 
 
 def _normalize_folder_path(path: str | os.PathLike[str]) -> str:
@@ -207,10 +207,14 @@ def convert_tree(
         completed_paths.append(source_path)
 
         if on_progress is not None:
+            sig = None
             try:
-                on_progress(index, len(discovered_files), str(source_path), conversion_results[-1])
+                sig = on_progress(index, len(discovered_files), str(source_path), conversion_results[-1])
             except TypeError:
-                on_progress(index, len(discovered_files), str(source_path))
+                sig = on_progress(index, len(discovered_files), str(source_path))
+            
+            if sig == "stop":
+                break
 
     results["folder_progress"] = build_folder_progress_summary(
         root_path,

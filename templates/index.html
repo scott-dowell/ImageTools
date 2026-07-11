@@ -127,6 +127,27 @@
 
     <div class="card shadow-sm mb-4">
       <div class="card-body">
+        <div class="row g-3 align-items-center">
+          <div class="col-auto">
+            <span class="text-secondary small fw-bold"><i class="bi bi-gear-fill me-1"></i>Controls:</span>
+          </div>
+          <div class="col-auto d-flex gap-2">
+            <button id="pauseBtn" class="btn btn-outline-warning btn-sm" style="width: 100px;" disabled>
+              <i class="bi bi-pause-fill me-1"></i>Pause
+            </button>
+            <button id="stopBtn" class="btn btn-outline-danger btn-sm" style="width: 100px;" disabled>
+              <i class="bi bi-stop-fill me-1"></i>Stop
+            </button>
+          </div>
+          <div class="col text-end text-muted small">
+            Current file will always complete before pausing or stopping.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
         <div class="row g-3 align-items-end">
           <div class="col-md-7">
             <label class="form-label text-secondary small fw-bold">Root folder</label>
@@ -214,6 +235,8 @@
     const breadcrumb = document.getElementById('breadcrumb');
     const selectedPathDisplay = document.getElementById('selectedPathDisplay');
     const browseSelectBtn = document.getElementById('browseSelectBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const stopBtn = document.getElementById('stopBtn');
     let _selectedPath = null;
     let _browseModalInstance = null;
     const summary = document.getElementById('summary');
@@ -487,11 +510,33 @@
       const response = await fetch('/api/progress');
       const data = await response.json();
       const isRunning = data.state === 'running';
+      const isPaused = data.paused === true;
+
+      // Update control buttons
+      if (isRunning) {
+        pauseBtn.disabled = false;
+        stopBtn.disabled = false;
+        pauseBtn.innerHTML = isPaused ? '<i class="bi bi-play-fill me-1"></i>Resume' : '<i class="bi bi-pause-fill me-1"></i>Pause';
+        pauseBtn.className = isPaused ? 'btn btn-outline-success btn-sm' : 'btn btn-outline-warning btn-sm';
+      } else {
+        pauseBtn.disabled = true;
+        stopBtn.disabled = true;
+        pauseBtn.innerHTML = '<i class="bi bi-pause-fill me-1"></i>Pause';
+        pauseBtn.className = 'btn btn-outline-warning btn-sm';
+      }
+
       const percent = isRunning ? Math.round(data.progress_percent || 0) : 0;
       updateSessionSummary(data);
-      progressLabel.textContent = isRunning ? 'Converting…' : 'Idle';
+      progressLabel.textContent = isRunning ? (isPaused ? 'Paused' : 'Converting…') : 'Idle';
       progressPercent.textContent = isRunning ? `${percent}%` : '0%';
       progressBar.style.width = isRunning ? `${percent}%` : '0%';
+      
+      if (isPaused) {
+        progressBar.classList.remove('progress-bar-animated');
+      } else {
+        progressBar.classList.add('progress-bar-animated');
+      }
+
       progressDetail.textContent = isRunning && data.current_file ? `Working on ${data.current_file}` : 'No conversion running.';
       if (data.folders && data.folders.length) {
         renderFolderResults(data.folders);
@@ -517,6 +562,19 @@
       resultsMeta.innerHTML = `<div class="small text-muted"><span class="fw-semibold">Run:</span> ${data.run ? data.run.root : root}</div>`;
       clearInterval(progressTimer);
       progressTimer = setInterval(updateProgress, 400);
+    });
+
+    pauseBtn.addEventListener('click', async () => {
+      await callApi('/api/pause', {});
+      updateProgress();
+    });
+
+    stopBtn.addEventListener('click', async () => {
+      if (confirm('Stop conversion? The current file will finish first.')) {
+        await callApi('/api/stop', {});
+        stopBtn.disabled = true;
+        stopBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Stopping...';
+      }
     });
   </script>
 </body>

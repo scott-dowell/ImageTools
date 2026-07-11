@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #25: Implement Pause/Play and Stop functionality for active conversion jobs with a dedicated UI controls card.
 - Issue #24: Consolidate active job status and prioritize summary stats at the top of the interface.
 - Issue #23: Decouple controls and status indicators into top-level cards for better UI clarity.
 - Issue #22: Revamp the appearance to more align with VideoTools with a new header bar, consistent icons, and updated color scheme.

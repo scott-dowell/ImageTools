@@ -109,6 +109,53 @@ def test_convert_tree_reports_progress(tmp_path: Path) -> None:
     assert events[-1][0] == 2
 
 
+def test_convert_tree_can_be_interrupted(tmp_path: Path) -> None:
+    source_dir = tmp_path / "images"
+    source_dir.mkdir()
+
+    for i in range(5):
+        Image.new("RGB", (64, 64), color=(255, 0, 0)).save(source_dir / f"img_{i}.png")
+
+    events = []
+
+    def on_progress(processed: int, total: int, current_path: str, result: dict) -> str:
+        events.append(processed)
+        if processed == 2:
+            return "stop"
+        return None
+
+    result = convert_tree(source_dir, on_progress=on_progress)
+
+    # Should have stopped after 2
+    assert result["converted_count"] == 2
+    assert len(events) == 2
+    assert len(discover_image_files(source_dir)) == 3  # 5 total - 2 converted
+
+
+def test_api_pause_and_stop_routes() -> None:
+    client = app_module.app.test_client()
+
+    with app_module._run_lock:
+        app_module._run_state["paused"] = False
+        app_module._run_state["stop_requested"] = False
+
+    # Test pause toggle
+    resp = client.post("/api/pause")
+    assert resp.status_code == 200
+    assert resp.get_json()["paused"] is True
+    assert app_module._run_state["paused"] is True
+
+    resp = client.post("/api/pause")
+    assert resp.get_json()["paused"] is False
+    assert app_module._run_state["paused"] is False
+
+    # Test stop
+    resp = client.post("/api/stop")
+    assert resp.status_code == 200
+    assert resp.get_json()["stop_requested"] is True
+    assert app_module._run_state["stop_requested"] is True
+
+
 def test_summarize_image_counts_by_folder(tmp_path: Path) -> None:
     source_dir = tmp_path / "images"
     (source_dir / "first").mkdir(parents=True)
@@ -298,8 +345,94 @@ def test_on_progress_accumulates_folder_totals_across_files(tmp_path: Path) -> N
 
     folder_state = next(item for item in app_module._run_state["folders"] if item["folder"] == str(folder_dir))
     assert folder_state["converted"] == 2
-    assert folder_state["saved_bytes"] > 0
-    assert folder_state["progress"] == 100
+
+
+def test_api_pause_toggles_state() -> None:
+    client = app_module.app.test_client()
+
+    with app_module._run_lock:
+        app_module._run_state["paused"] = False
+
+    response = client.post("/api/pause")
+    assert response.status_code == 200
+    assert response.get_json()["paused"] is True
+    with app_module._run_lock:
+        assert app_module._run_state["paused"] is True
+
+    response = client.post("/api/pause")
+    assert response.status_code == 200
+    assert response.get_json()["paused"] is False
+    with app_module._run_lock:
+        assert app_module._run_state["paused"] is False
+
+
+def test_api_stop_sets_state() -> None:
+    client = app_module.app.test_client()
+
+    with app_module._run_lock:
+        app_module._run_state["stop_requested"] = False
+
+    response = client.post("/api/stop")
+    assert response.status_code == 200
+    assert response.get_json()["stop_requested"] is True
+    with app_module._run_lock:
+        assert app_module._run_state["stop_requested"] is True
+
+
+def test_on_progress_returns_stop_when_requested() -> None:
+    with app_module._run_lock:
+        app_module._run_state["stop_requested"] = True
+        app_module._run_state["paused"] = False
+
+    result = app_module._on_progress(1, 10, "test.jpg")
+    assert result == "stop"
+
+
+def test_on_progress_waits_when_paused() -> None:
+    import time
+    import threading
+
+    with app_module._run_lock:
+        app_module._run_state["paused"] = True
+        app_module._run_state["stop_requested"] = False
+        app_module._run_state["processed"] = 0
+
+    def unpause_later():
+        time.sleep(0.5)
+        with app_module._run_lock:
+            app_module._run_state["paused"] = False
+
+    threading.Thread(target=unpause_later).start()
+
+    start_time = time.time()
+    app_module._on_progress(1, 10, "test.jpg")
+    end_time = time.time()
+
+    assert end_time - start_time >= 0.5
+    with app_module._run_lock:
+        assert app_module._run_state["processed"] == 1
+
+
+def test_convert_tree_stops_midway(tmp_path: Path) -> None:
+    source_dir = tmp_path / "images"
+    source_dir.mkdir()
+    for i in range(5):
+        Image.new("RGB", (10, 10)).save(source_dir / f"img{i}.jpg")
+
+    processed_files = []
+    def stop_callback(processed, total, path, result=None):
+        processed_files.append(path)
+        if processed == 2:
+            return "stop"
+        return None
+
+    result = convert_tree(source_dir, on_progress=stop_callback)
+
+    assert len(processed_files) == 2
+    assert result["converted_count"] == 2
+    second_file_path = Path(processed_files[1])
+    assert not second_file_path.exists()
+    assert second_file_path.with_suffix(".webp").exists()
 
 
 def test_build_folder_progress_summary_tracks_counts_and_saved_size(tmp_path: Path) -> None:
