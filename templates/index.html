@@ -164,6 +164,7 @@
     const browseRefreshBtn = document.getElementById('browseRefreshBtn');
     const browseSelectBtn = document.getElementById('browseSelectBtn');
     let browseCurrentPath = '';
+    let browseParentPath = '';
     let browseSelectedPath = '';
     const summary = document.getElementById('summary');
     const folderSummary = document.getElementById('folderSummary');
@@ -264,10 +265,11 @@
       const response = await fetch(`/api/browse?path=${encodeURIComponent(path)}`);
       const data = await response.json();
       browseCurrentPath = data.path || '';
+      browseParentPath = data.parent || '';
       browseSelectedPath = data.path || '';
       browseStatus.textContent = data.path ? `Showing subfolders for ${data.path}` : 'Browsing drives and folders';
       browsePath.textContent = data.path || 'Root';
-      browseParentBtn.disabled = !data.parent;
+      browseParentBtn.disabled = !browseParentPath;
       if (!data.dirs || !data.dirs.length) {
         browseList.innerHTML = '<div class="list-group-item text-muted">No subfolders found.</div>';
         return;
@@ -327,17 +329,11 @@
     });
 
     browseParentBtn.addEventListener('click', async () => {
-      if (!browseCurrentPath) {
+      if (!browseParentPath) {
         await loadBrowseFolders('');
         return;
       }
-      const currentPath = browseCurrentPath || '';
-      const parentPath = currentPath.includes('\\') || currentPath.includes('/') ? currentPath : '';
-      if (parentPath) {
-        await loadBrowseFolders(parentPath);
-        return;
-      }
-      await loadBrowseFolders('');
+      await loadBrowseFolders(browseParentPath);
     });
 
     browseRefreshBtn.addEventListener('click', async () => {
