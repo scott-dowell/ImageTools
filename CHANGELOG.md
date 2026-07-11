@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #50: Standardize font size for the Controls disclaimer text and improve phrasing.
 - Issue #49: Fix Stop button state reset and ensure Pause/Stop buttons maintain consistent 50% width during conversion.
 - Issue #48: Fix real-time conversion stats (converted/skipped counts) not updating in the header cards during processing.
 - Issue #47: Align summary card groups with the vertical columns of the main dashboard layout for better visual continuity.
