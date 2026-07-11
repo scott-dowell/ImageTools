@@ -5,18 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ImageTools</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <style>
-    body { background: #f6f8fa; }
-    .hero { background: linear-gradient(135deg, #0d6efd, #6f42c1); color: white; }
-    .card { border-radius: 1rem; }
-    pre { white-space: pre-wrap; word-break: break-word; }
+    body { background: #f8f9fa; padding-top: 64px; }
+    .navbar { border-bottom: 1px solid #dee2e6; }
+    .card { border-radius: 0.5rem; border: 1px solid #dee2e6; }
+    .card-header { font-weight: 600; color: #495057; }
     .folder-table { min-width: 900px; }
     .results-card { max-width: 100%; }
     .folder-table th, .folder-table td { white-space: nowrap; }
-    .folder-table td.folder-path { white-space: normal; word-break: break-word; max-width: 320px; width: 320px; }
+    .folder-table td.folder-path { 
+      white-space: nowrap; 
+      overflow: hidden;
+      text-overflow: ellipsis; 
+      max-width: 280px; 
+    }
     .folder-table th:nth-child(2), .folder-table td:nth-child(2) { width: 72px; }
-    .folder-table th:nth-child(3), .folder-table td:nth-child(3), .folder-table th:nth-child(4), .folder-table td:nth-child(4), .folder-table th:nth-child(5), .folder-table td:nth-child(5) { width: 74px; }
-    .folder-table th:nth-child(6), .folder-table td:nth-child(6), .folder-table th:nth-child(7), .folder-table td:nth-child(7), .folder-table th:nth-child(8), .folder-table td:nth-child(8), .folder-table th:nth-child(9), .folder-table td:nth-child(9) { width: 88px; }
+    .folder-table th:nth-child(3), .folder-table td:nth-child(3) { width: 140px; }
+    .folder-table th:nth-child(4), .folder-table td:nth-child(4), .folder-table th:nth-child(5), .folder-table td:nth-child(5), .folder-table th:nth-child(6), .folder-table td:nth-child(6), .folder-table th:nth-child(7), .folder-table td:nth-child(7), .folder-table th:nth-child(8), .folder-table td:nth-child(8), .folder-table th:nth-child(9), .folder-table td:nth-child(9) { width: 88px; }
     .folder-table th:nth-child(10), .folder-table td:nth-child(10) { width: 92px; }
     .results-scroll {
       max-height: 20rem;
@@ -27,84 +33,122 @@
   </style>
 </head>
 <body>
-  <div class="container py-4">
-    <div class="hero card border-0 shadow-sm mb-4">
-      <div class="card-body p-4">
-        <h1 class="h3 mb-2">ImageTools</h1>
-        <p class="mb-0">Browse a folder tree and convert supported images to WebP in a structured output folder.</p>
+  <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center" href="#">
+        <i class="bi bi-image me-2 text-primary fs-3"></i>
+        <div>
+          <div class="fw-bold lh-1">ImageTools</div>
+          <div class="small text-muted" style="font-size: 0.75rem;">v1.0.0</div>
+        </div>
+      </a>
+      <div class="ms-auto text-secondary small">
+        <i class="bi bi-hdd-network me-1"></i> System Online
       </div>
     </div>
+  </nav>
+
+  <div class="container py-4">
 
     <div class="card shadow-sm mb-4">
       <div class="card-body">
         <div class="row g-3 align-items-end">
           <div class="col-md-7">
-            <label class="form-label">Root folder</label>
+            <label class="form-label text-secondary small fw-bold">Root folder</label>
             <div class="input-group">
               <input id="rootFolder" class="form-control" placeholder="C:\\Photos" />
               <button id="browseBtn" class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#browseModal">Browse…</button>
             </div>
           </div>
           <div class="col-md-2">
-            <label class="form-label">Quality</label>
+            <label class="form-label text-secondary small fw-bold">Quality</label>
             <input id="quality" class="form-control" type="number" min="1" max="100" value="85" />
           </div>
           <div class="col-md-3 d-flex gap-2">
-            <button id="scanBtn" class="btn btn-outline-primary w-100">Scan</button>
-            <button id="convertBtn" class="btn btn-primary w-100">Convert</button>
+            <button id="scanBtn" class="btn btn-outline-primary w-100">
+              <i class="bi bi-search me-1"></i>Scan
+            </button>
+            <button id="convertBtn" class="btn btn-primary w-100">
+              <i class="bi bi-play-fill me-1"></i>Convert
+            </button>
           </div>
         </div>
-        <div class="mt-3">
-          <div class="d-flex justify-content-between small text-secondary mb-1">
-            <span id="progressLabel">Idle</span>
-            <span id="progressPercent">0%</span>
-          </div>
-          <div class="progress" style="height: 8px;">
-            <div id="progressBar" class="progress-bar" style="width: 0%"></div>
-          </div>
-          <div id="progressDetail" class="small text-muted mt-2">No conversion running.</div>
-        </div>
+      </div>
+    </div>
 
-        <div class="row g-3 mt-3">
-          <div class="col-md-3">
-            <div class="border rounded p-3 h-100 bg-light">
-              <div class="small text-secondary">Total images</div>
-              <div id="summaryTotal" class="fs-4 fw-semibold">0</div>
-              <div id="summaryTotalSub" class="small text-muted">Waiting to scan</div>
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between small text-secondary mb-1">
+          <span id="progressLabel"><i class="bi bi-info-circle me-1"></i>Idle</span>
+          <span id="progressPercent">0%</span>
+        </div>
+        <div class="progress" style="height: 10px; background-color: #e9ecef;">
+          <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+        </div>
+        <div id="progressDetail" class="small text-muted mt-2">No conversion running.</div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-3">
+        <div class="card shadow-sm h-100 border-0 border-start border-4 border-primary">
+          <div class="card-body">
+            <div class="small text-secondary d-flex align-items-center">
+              <i class="bi bi-images me-2 text-primary"></i>Total images
             </div>
+            <div id="summaryTotal" class="fs-4 fw-semibold mt-1">0</div>
+            <div id="summaryTotalSub" class="small text-muted">Waiting to scan</div>
           </div>
-          <div class="col-md-3">
-            <div class="border rounded p-3 h-100 bg-light">
-              <div class="small text-secondary">Converted</div>
-              <div id="summaryConverted" class="fs-4 fw-semibold text-success">0</div>
-              <div id="summaryConvertedSub" class="small text-muted">0% complete</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card shadow-sm h-100 border-0 border-start border-4 border-success">
+          <div class="card-body">
+            <div class="small text-secondary d-flex align-items-center">
+              <i class="bi bi-check-circle me-2 text-success"></i>Converted
             </div>
+            <div id="summaryConverted" class="fs-4 fw-semibold text-success mt-1">0</div>
+            <div id="summaryConvertedSub" class="small text-muted">0% complete</div>
           </div>
-          <div class="col-md-3">
-            <div class="border rounded p-3 h-100 bg-light">
-              <div class="small text-secondary">Skipped</div>
-              <div id="summarySkipped" class="fs-4 fw-semibold text-warning">0</div>
-              <div id="summarySkippedSub" class="small text-muted">No failures</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card shadow-sm h-100 border-0 border-start border-4 border-warning">
+          <div class="card-body">
+            <div class="small text-secondary d-flex align-items-center">
+              <i class="bi bi-exclamation-triangle me-2 text-warning"></i>Skipped
             </div>
+            <div id="summarySkipped" class="fs-4 fw-semibold text-warning mt-1">0</div>
+            <div id="summarySkippedSub" class="small text-muted">No failures</div>
           </div>
-          <div class="col-md-3">
-            <div class="border rounded p-3 h-100 bg-light">
-              <div class="small text-secondary">Saved</div>
-              <div id="summarySaved" class="fs-4 fw-semibold text-primary">0 B</div>
-              <div id="summarySavedSub" class="small text-muted">Awaiting results</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card shadow-sm h-100 border-0 border-start border-4 border-info">
+          <div class="card-body">
+            <div class="small text-secondary d-flex align-items-center">
+              <i class="bi bi-database-check me-2 text-info"></i>Saved
             </div>
+            <div id="summarySaved" class="fs-4 fw-semibold text-info mt-1">0 B</div>
+            <div id="summarySavedSub" class="small text-muted">Awaiting results</div>
           </div>
-          <div class="col-md-12 mt-2">
-            <div class="border rounded p-3 bg-light">
-              <div class="row g-3">
-                <div class="col-md-8">
-                  <div class="small text-secondary">Current file</div>
-                  <div id="summaryCurrentFile" class="fw-semibold text-truncate">Waiting to start</div>
+        </div>
+      </div>
+      <div class="col-md-12">
+        <div class="card shadow-sm border-0 border-start border-4 border-secondary">
+          <div class="card-body py-2">
+            <div class="row g-3">
+              <div class="col-md-9">
+                <div class="small text-secondary d-flex align-items-center">
+                  <i class="bi bi-file-earmark-image me-2 text-secondary"></i>Current file
                 </div>
-                <div class="col-md-4">
-                  <div class="small text-secondary">ETA</div>
-                  <div id="summaryEta" class="fw-semibold">—</div>
+                <div id="summaryCurrentFile" class="fw-semibold text-truncate small">Waiting to start</div>
+              </div>
+              <div class="col-md-3">
+                <div class="small text-secondary d-flex align-items-center">
+                  <i class="bi bi-clock-history me-2 text-secondary"></i>ETA
                 </div>
+                <div id="summaryEta" class="fw-semibold small">—</div>
               </div>
             </div>
           </div>
@@ -115,16 +159,24 @@
     <div class="row g-4">
       <div class="col-12">
         <div class="card shadow-sm h-100 results-card">
-          <div class="card-header bg-white">Scan result</div>
+          <div class="card-header bg-white d-flex align-items-center">
+            <i class="bi bi-card-checklist me-2 text-primary"></i>Scan result
+          </div>
           <div class="card-body">
-            <div id="summary" class="text-secondary">No scan performed yet.</div>
+            <div id="summary" class="text-secondary small">No scan performed yet.</div>
             <div id="folderSummary" class="mt-3"></div>
-            <div id="resultsMeta" class="mt-3"></div>
+            <div id="resultsMeta" class="mt-3 small text-muted"></div>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+  <footer class="footer mt-5 py-3 bg-white border-top">
+    <div class="container text-center">
+      <span class="text-muted small">ImageTools &copy; 2026 &bull; Professional Image Optimization Workflow</span>
+    </div>
+  </footer>
 
   <div class="modal fade" id="browseModal" tabindex="-1" aria-labelledby="browseModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -223,36 +275,42 @@
       const root = document.getElementById('rootFolder').value;
       folderSummary.innerHTML = `
         <div class="border rounded overflow-hidden">
-          <div class="bg-light px-3 py-2 border-bottom small fw-semibold text-secondary">Folder results</div>
+          <div class="bg-light px-3 py-2 border-bottom small fw-semibold text-secondary d-flex align-items-center">
+            <i class="bi bi-hdd-stack me-2 text-secondary"></i>Folder analysis
+          </div>
           <div class="table-responsive results-scroll">
             <table class="table table-sm table-hover align-middle mb-0 folder-table">
-              <thead>
+              <thead class="table-light">
                 <tr>
-                  <th scope="col">Folder</th>
-                  <th scope="col" class="text-end">Images</th>
-                  <th scope="col">Progress</th>
-                  <th scope="col">Converted</th>
-                  <th scope="col">Skipped</th>
-                  <th scope="col">Before</th>
-                  <th scope="col">After</th>
-                  <th scope="col">Saved</th>
-                  <th scope="col">% Saved</th>
-                  <th scope="col">Status</th>
+                  <th scope="col" class="small text-secondary fw-semibold">FOLDER</th>
+                  <th scope="col" class="text-end small text-secondary fw-semibold pe-3">IMAGES</th>
+                  <th scope="col" class="small text-secondary fw-semibold">PROGRESS</th>
+                  <th scope="col" class="small text-secondary fw-semibold">DONE</th>
+                  <th scope="col" class="small text-secondary fw-semibold">SKIP</th>
+                  <th scope="col" class="small text-secondary fw-semibold text-end">BEFORE</th>
+                  <th scope="col" class="small text-secondary fw-semibold text-end">AFTER</th>
+                  <th scope="col" class="small text-secondary fw-semibold text-end">SAVED</th>
+                  <th scope="col" class="small text-secondary fw-semibold text-end">%</th>
+                  <th scope="col" class="small text-secondary fw-semibold">STATUS</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody class="small">
                 ${items.map((item) => `
                   <tr>
-                    <td class="folder-path">${getDisplayFolderPath(item.folder, root)}</td>
-                    <td class="text-end fw-semibold">${item.count}</td>
-                    <td>${item.progress ?? 0}%</td>
+                    <td class="folder-path text-truncate" title="${item.folder}">${getDisplayFolderPath(item.folder, root)}</td>
+                    <td class="text-end fw-semibold pe-3">${item.count}</td>
+                    <td style="width: 120px;">
+                      <div class="progress" style="height: 6px;">
+                        <div class="progress-bar ${item.progress === 100 ? 'bg-success' : 'bg-primary'}" role="progressbar" style="width: ${item.progress ?? 0}%"></div>
+                      </div>
+                    </td>
                     <td>${item.converted ?? 0}</td>
                     <td>${item.skipped ?? 0}</td>
-                    <td>${formatBytes(item.size_before_bytes ?? 0)}</td>
-                    <td>${formatBytes(item.size_after_bytes ?? 0)}</td>
-                    <td>${formatBytes(item.saved_bytes ?? 0)}</td>
-                    <td>${item.savings_percent ?? 0}%</td>
-                    <td><span class="badge text-bg-secondary">${item.status || 'pending'}</span></td>
+                    <td class="text-end">${formatBytes(item.size_before_bytes ?? 0)}</td>
+                    <td class="text-end">${formatBytes(item.size_after_bytes ?? 0)}</td>
+                    <td class="text-end text-success">${formatBytes(item.saved_bytes ?? 0)}</td>
+                    <td class="text-end fw-semibold">${Math.round(item.savings_percent ?? 0)}%</td>
+                    <td><span class="badge ${item.status === 'done' ? 'text-bg-success' : 'text-bg-secondary'}">${item.status || 'pending'}</span></td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -281,12 +339,12 @@
     function renderBreadcrumb(currentPath, parent) {
       breadcrumb.innerHTML = '';
       if (!currentPath) {
-        breadcrumb.innerHTML = '<li class="breadcrumb-item active">This PC</li>';
+        breadcrumb.innerHTML = '<li class="breadcrumb-item active"><i class="bi bi-pc-display me-1"></i>This PC</li>';
         return;
       }
       const normalizedPath = currentPath.replace(/\\/g, '/');
       const parts = normalizedPath.split('/').filter(p => p.length > 0);
-      const crumbs = [{ label: 'This PC', path: '' }];
+      const crumbs = [{ label: 'This PC', path: '', icon: 'bi-pc-display' }];
       let built = '';
       for (const p of parts) {
         if (p.endsWith(':')) {
@@ -303,12 +361,22 @@
         if (!isLast) {
           const a = document.createElement('a');
           a.href = '#';
-          a.textContent = c.label;
+          if (c.icon) {
+            const icon = document.createElement('i');
+            icon.className = `bi ${c.icon} me-1`;
+            a.appendChild(icon);
+          }
+          a.appendChild(document.createTextNode(c.label));
           a.style.textDecoration = 'none';
           a.onclick = (e) => { e.preventDefault(); loadBrowseFolders(c.path); };
           li.appendChild(a);
         } else {
-          li.textContent = c.label;
+          if (c.icon) {
+            const icon = document.createElement('i');
+            icon.className = `bi ${c.icon} me-1`;
+            li.appendChild(icon);
+          }
+          li.appendChild(document.createTextNode(c.label));
         }
         breadcrumb.appendChild(li);
       });

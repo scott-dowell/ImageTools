@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #23: Decouple controls and status indicators into top-level cards for better UI clarity.
+- Issue #22: Revamp the appearance to more align with VideoTools with a new header bar, consistent icons, and updated color scheme.
 - Issue #21: Revamp folder picker to match canonical VideoTools implementation with breadcrumbs, drive enumeration, and friendly labels.
 - Issue #20: Implement folder selection UI with hardened drive-root navigation and interactive parent directory logic.
 - Issue #19: Add live current-file and ETA summary cards during conversion.
