@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #44: Fix hidden overflow cropping on the dashboard row that was clipping card bottom borders regardless of content height.
 - Issue #43: Remove footer to eliminate card bottom clipping caused by overflow constraints in the fixed-height layout.
 - Issue #42: Fix card clipping issue by removing fixed-top navbar and allowing flexbox to naturally manage viewport height without padding offsets.
 - Issue #41: Apply a strict maxHeight to the results-scroll container to ensure the table is always self-contained and never pushes outside the card or overlaps the footer.
