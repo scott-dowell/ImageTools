@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #43: Remove footer to eliminate card bottom clipping caused by overflow constraints in the fixed-height layout.
 - Issue #42: Fix card clipping issue by removing fixed-top navbar and allowing flexbox to naturally manage viewport height without padding offsets.
 - Issue #41: Apply a strict maxHeight to the results-scroll container to ensure the table is always self-contained and never pushes outside the card or overlaps the footer.
 - Issue #40: Fix CSS stacking and height constraints to ensure the results card is always clipped by its container and never overlaps the footer.
