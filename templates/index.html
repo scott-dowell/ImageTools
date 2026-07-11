@@ -42,8 +42,13 @@
           <div class="small text-muted" style="font-size: 0.75rem;">v1.0.0</div>
         </div>
       </a>
-      <div class="ms-auto text-secondary small">
-        <i class="bi bi-hdd-network me-1"></i> System Online
+      <div class="ms-auto d-flex align-items-center gap-3">
+        <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#settingsModal" title="Settings">
+          <i class="bi bi-gear-fill"></i>
+        </button>
+        <div class="text-secondary small">
+          <i class="bi bi-hdd-network me-1"></i> System Online
+        </div>
       </div>
     </div>
   </nav>
@@ -130,20 +135,16 @@
 
     <div class="card shadow-sm mb-4">
       <div class="card-header bg-white d-flex align-items-center">
-        <i class="bi bi-folder2-open me-2 text-primary"></i>Configuration
+        <i class="bi bi-folder2-open me-2 text-primary"></i>Folder to Convert
       </div>
       <div class="card-body">
         <div class="row g-3 align-items-end">
-          <div class="col-md-7">
+          <div class="col-md-9">
             <label class="form-label text-secondary small fw-bold">Root folder</label>
             <div class="input-group">
               <input id="rootFolder" class="form-control" placeholder="C:\\Photos" />
               <button id="browseBtn" class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#browseModal">Browse…</button>
             </div>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label text-secondary small fw-bold">Quality</label>
-            <input id="quality" class="form-control" type="number" min="1" max="100" value="85" />
           </div>
           <div class="col-md-3 d-flex gap-2">
             <button id="scanBtn" class="btn btn-outline-primary w-100">
@@ -229,6 +230,30 @@
           <button id="browseSelectBtn" type="button" class="btn btn-primary btn-sm" disabled>
             <i class="bi bi-folder-check me-1"></i>Select Folder
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="settingsModalLabel">
+            <i class="bi bi-gear-fill me-2 text-secondary"></i>Settings
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="quality" class="form-label text-secondary small fw-bold">Conversion Quality (1-100)</label>
+            <input id="quality" class="form-control" type="number" min="1" max="100" value="85" />
+            <div class="form-text small">Higher quality results in larger file sizes.</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>

@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #29: Move Quality setting to a new Settings dialog and rename the configuration card header.
 - Issue #28: Relocate convert button to the controls card as the primary action.
 - Issue #27: Move controls card below the browse configuration card for a more logical workflow.
 - Issue #26: Replicate VideoTools card header style across all cards in the UI.
