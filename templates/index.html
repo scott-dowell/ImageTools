@@ -67,58 +67,69 @@
   <div class="container-fluid flex-grow-1 d-flex flex-column" style="min-height: 0; padding: 1.5rem; overflow: hidden;">
 
     <div class="row g-3 mb-3 flex-shrink-0">
-      <div class="col">
-        <div class="card shadow-sm h-100 border-0 border-start border-4 border-primary">
-          <div class="card-body">
-            <div class="small text-secondary d-flex align-items-center">
-              <i class="bi bi-images me-2 text-primary"></i>Total images
+      <!-- Source Group: Folder Stats -->
+      <div class="col-lg-5">
+        <div class="row g-3 h-100">
+          <div class="col-6">
+            <div class="card shadow-sm h-100 border-0 border-start border-4 border-primary">
+              <div class="card-body">
+                <div class="small text-secondary d-flex align-items-center text-truncate">
+                  <i class="bi bi-images me-2 text-primary"></i>Total images
+                </div>
+                <div id="summaryTotal" class="fs-4 fw-semibold mt-1">0</div>
+                <div id="summaryTotalSub" class="small text-muted text-truncate">Waiting to scan</div>
+              </div>
             </div>
-            <div id="summaryTotal" class="fs-4 fw-semibold mt-1">0</div>
-            <div id="summaryTotalSub" class="small text-muted">Waiting to scan</div>
+          </div>
+          <div class="col-6">
+            <div class="card shadow-sm h-100 border-0 border-start border-4 border-secondary">
+              <div class="card-body">
+                <div class="small text-secondary d-flex align-items-center text-truncate">
+                  <i class="bi bi-folder me-2 text-secondary"></i>Resources
+                </div>
+                <div id="summaryFolders" class="fs-4 fw-semibold mt-1">0 <span class="text-muted" style="font-size: 0.75rem; font-weight: normal;">folders</span></div>
+                <div id="summarySize" class="small text-muted text-truncate">0 B total</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      <div class="col">
-        <div class="card shadow-sm h-100 border-0 border-start border-4 border-secondary">
-          <div class="card-body">
-            <div class="small text-secondary d-flex align-items-center">
-              <i class="bi bi-folder me-2 text-secondary"></i>Resources
+
+      <!-- Results Group: Conversion Progress -->
+      <div class="col-lg-7">
+        <div class="row g-3 h-100">
+          <div class="col-4">
+            <div class="card shadow-sm h-100 border-0 border-start border-4 border-success">
+              <div class="card-body">
+                <div class="small text-secondary d-flex align-items-center text-truncate">
+                  <i class="bi bi-check-circle me-2 text-success"></i>Converted
+                </div>
+                <div id="summaryConverted" class="fs-4 fw-semibold text-success mt-1">0</div>
+                <div id="summaryConvertedSub" class="small text-muted text-truncate">0% complete</div>
+              </div>
             </div>
-            <div id="summaryFolders" class="fs-4 fw-semibold mt-1">0 <span class="text-muted" style="font-size: 0.75rem; font-weight: normal;">folders</span></div>
-            <div id="summarySize" class="small text-muted">0 B total</div>
           </div>
-        </div>
-      </div>
-      <div class="col">
-        <div class="card shadow-sm h-100 border-0 border-start border-4 border-success">
-          <div class="card-body">
-            <div class="small text-secondary d-flex align-items-center">
-              <i class="bi bi-check-circle me-2 text-success"></i>Converted
+          <div class="col-4">
+            <div class="card shadow-sm h-100 border-0 border-start border-4 border-warning">
+              <div class="card-body">
+                <div class="small text-secondary d-flex align-items-center text-truncate">
+                  <i class="bi bi-exclamation-triangle me-2 text-warning"></i>Skipped
+                </div>
+                <div id="summarySkipped" class="fs-4 fw-semibold text-warning mt-1">0</div>
+                <div id="summarySkippedSub" class="small text-muted text-truncate">No failures</div>
+              </div>
             </div>
-            <div id="summaryConverted" class="fs-4 fw-semibold text-success mt-1">0</div>
-            <div id="summaryConvertedSub" class="small text-muted">0% complete</div>
           </div>
-        </div>
-      </div>
-      <div class="col">
-        <div class="card shadow-sm h-100 border-0 border-start border-4 border-warning">
-          <div class="card-body">
-            <div class="small text-secondary d-flex align-items-center">
-              <i class="bi bi-exclamation-triangle me-2 text-warning"></i>Skipped
+          <div class="col-4">
+            <div class="card shadow-sm h-100 border-0 border-start border-4 border-info">
+              <div class="card-body">
+                <div class="small text-secondary d-flex align-items-center text-truncate">
+                  <i class="bi bi-database-check me-2 text-info"></i>Saved
+                </div>
+                <div id="summarySaved" class="fs-4 fw-semibold text-info mt-1">0 B</div>
+                <div id="summarySavedSub" class="small text-muted text-truncate">Awaiting results</div>
+              </div>
             </div>
-            <div id="summarySkipped" class="fs-4 fw-semibold text-warning mt-1">0</div>
-            <div id="summarySkippedSub" class="small text-muted">No failures</div>
-          </div>
-        </div>
-      </div>
-      <div class="col">
-        <div class="card shadow-sm h-100 border-0 border-start border-4 border-info">
-          <div class="card-body">
-            <div class="small text-secondary d-flex align-items-center">
-              <i class="bi bi-database-check me-2 text-info"></i>Saved
-            </div>
-            <div id="summarySaved" class="fs-4 fw-semibold text-info mt-1">0 B</div>
-            <div id="summarySavedSub" class="small text-muted">Awaiting results</div>
           </div>
         </div>
       </div>
