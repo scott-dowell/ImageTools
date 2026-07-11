@@ -267,6 +267,7 @@
       browseSelectedPath = data.path || '';
       browseStatus.textContent = data.path ? `Showing subfolders for ${data.path}` : 'Browsing drives and folders';
       browsePath.textContent = data.path || 'Root';
+      browseParentBtn.disabled = !data.parent;
       if (!data.dirs || !data.dirs.length) {
         browseList.innerHTML = '<div class="list-group-item text-muted">No subfolders found.</div>';
         return;
@@ -330,8 +331,13 @@
         await loadBrowseFolders('');
         return;
       }
-      const parentPath = browseCurrentPath.split(/\\|\//).filter(Boolean).slice(0, -1).join('\\') || '';
-      await loadBrowseFolders(parentPath);
+      const currentPath = browseCurrentPath || '';
+      const parentPath = currentPath.includes('\\') || currentPath.includes('/') ? currentPath : '';
+      if (parentPath) {
+        await loadBrowseFolders(parentPath);
+        return;
+      }
+      await loadBrowseFolders('');
     });
 
     browseRefreshBtn.addEventListener('click', async () => {
