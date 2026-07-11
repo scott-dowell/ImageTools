@@ -295,6 +295,25 @@
     </div>
   </div>
 
+  <!-- Stop Confirmation Modal -->
+  <div class="modal fade" id="stopConfirmModal" tabindex="-1" aria-labelledby="stopConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content shadow">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold" id="stopConfirmModalLabel">Stop Conversion?</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-secondary small">
+          The process will stop as soon as the current file finishes converting.
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-link text-secondary text-decoration-none btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button id="confirmStopBtn" type="button" class="btn btn-danger btn-sm px-3">Stop</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     const scanBtn = document.getElementById('scanBtn');
@@ -308,8 +327,10 @@
     const browseSelectBtn = document.getElementById('browseSelectBtn');
     const pauseBtn = document.getElementById('pauseBtn');
     const stopBtn = document.getElementById('stopBtn');
+    const confirmStopBtn = document.getElementById('confirmStopBtn');
     let _selectedPath = null;
     let _browseModalInstance = null;
+    let _stopConfirmModalInstance = null;
     const summary = document.getElementById('summary');
     const folderSummary = document.getElementById('folderSummary');
     const progressLabel = document.getElementById('progressLabel');
@@ -652,10 +673,19 @@
       updateProgress();
     });
 
-    stopBtn.addEventListener('click', async () => {
-      if (confirm('Stop conversion? The current file will finish first.')) {
-        await callApi('/api/stop', {});
+    stopBtn.addEventListener('click', () => {
+      if (!_stopConfirmModalInstance) {
+        _stopConfirmModalInstance = new bootstrap.Modal(document.getElementById('stopConfirmModal'));
       }
+      _stopConfirmModalInstance.show();
+    });
+
+    confirmStopBtn.addEventListener('click', async () => {
+      if (_stopConfirmModalInstance) {
+        _stopConfirmModalInstance.hide();
+      }
+      await callApi('/api/stop', {});
+      updateProgress();
     });
   </script>
 </body>
