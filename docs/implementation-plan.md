@@ -19,14 +19,14 @@ The core ImageTools workflow is now implemented and verified. The project has pr
 | Core conversion workflow | Completed | Supports root-folder selection, recursive discovery, safe in-place WebP conversion, and clear success/failure reporting. |
 | UX polish | Completed | Uses a fresh copy of sample-image fixtures for browser verification before meaningful UI changes. |
 | Progress and status tracking | Completed | Shows scan counts, live run status, folder-level progress, current-file detail, ETA, and saved-byte totals. Pause/resume/stop controls are implemented. |
-| Folder and batch visibility enhancements | Mostly completed | Includes the folder results table, relative path display, scrollable results, and live summary cards. |
+| Folder and batch visibility enhancements | Completed | Includes the folder results table, relative path display, scrollable results, live summary cards, and quick actions (Copy Path/Open). |
 | Later-phase refinements | Partially completed | Sidebar layout reordered for workflow clarity. Pause/stop controls added. |
 
 ## Outstanding work
 
-- Add quick folder actions such as copy path and open in Explorer.
-- Add a lightweight file preview experience for selected folders.
-- Add a cleanup step for legacy converted folders.
+- Add a cleanup step for legacy converted folders (remove Converted.webp subdirectories from old runs).
 - Add richer per-image and per-folder savings details.
 - Consider drag-and-drop or folder-browser integration for easier input selection.
-- Revisit whether a small local database is needed for history, resumability, or longer-term tracking.
+- ~~Revisit whether a small local database is needed for history, resumability, or longer-term tracking.~~ (Cancelled)
+- Consider parallel conversion for multi-core performance (Future Enhancement).
+- ~~Add a lightweight file preview experience for selected folders.~~ (Cancelled)
