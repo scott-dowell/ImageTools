@@ -95,38 +95,33 @@
           </div>
         </div>
       </div>
-      <div class="col-md-12">
-        <div class="card shadow-sm border-0 border-start border-4 border-secondary">
-          <div class="card-body py-2">
-            <div class="row g-3">
-              <div class="col-md-9">
-                <div class="small text-secondary d-flex align-items-center">
-                  <i class="bi bi-file-earmark-image me-2 text-secondary"></i>Current file
-                </div>
-                <div id="summaryCurrentFile" class="fw-semibold text-truncate small">Waiting to start</div>
-              </div>
-              <div class="col-md-3">
-                <div class="small text-secondary d-flex align-items-center">
-                  <i class="bi bi-clock-history me-2 text-secondary"></i>ETA
-                </div>
-                <div id="summaryEta" class="fw-semibold small">—</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <div class="card shadow-sm mb-4">
       <div class="card-body">
+        <div class="row g-3 mb-3">
+          <div class="col-md-9">
+            <div class="small text-secondary d-flex align-items-center">
+              <i class="bi bi-file-earmark-image me-2 text-primary"></i>Current file
+            </div>
+            <div id="summaryCurrentFile" class="fw-semibold text-truncate small mt-1">Waiting to start</div>
+          </div>
+          <div class="col-md-3 text-end">
+            <div class="small text-secondary d-flex align-items-center justify-content-end">
+              <i class="bi bi-clock-history me-2 text-primary"></i>ETA
+            </div>
+            <div id="summaryEta" class="fw-semibold small mt-1">—</div>
+          </div>
+        </div>
+        
         <div class="d-flex justify-content-between small text-secondary mb-1">
           <span id="progressLabel"><i class="bi bi-info-circle me-1"></i>Idle</span>
           <span id="progressPercent">0%</span>
         </div>
-        <div class="progress" style="height: 10px; background-color: #e9ecef;">
+        <div class="progress" style="height: 12px; background-color: #e9ecef;">
           <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
         </div>
-        <div id="progressDetail" class="small text-muted mt-2">No conversion running.</div>
+        <div id="progressDetail" class="small text-muted mt-2 d-none">No conversion running.</div>
       </div>
     </div>
 
