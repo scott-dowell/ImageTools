@@ -167,6 +167,15 @@ def convert_tree(
         if source_path.name.lower().startswith("converted") or source_path.suffix.lower() == ".webp":
             continue
 
+        if on_progress is not None:
+            sig = None
+            try:
+                sig = on_progress(index - 1, len(discovered_files), str(source_path), None)
+            except TypeError:
+                sig = on_progress(index - 1, len(discovered_files), str(source_path))
+            if sig == "stop":
+                break
+
         output_path = source_path.with_suffix(".webp")
 
         try:

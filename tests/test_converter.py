@@ -104,9 +104,9 @@ def test_convert_tree_reports_progress(tmp_path: Path) -> None:
     result = convert_tree(source_dir, on_progress=on_progress)
 
     assert result["converted_count"] == 2
-    assert len(events) >= 2
-    assert events[0][0] == 1
-    assert events[-1][0] == 2
+    assert len(events) >= 4  # Start/Finish for each of 2 files
+    assert events[0][0] == 0  # Starting first file
+    assert events[-1][0] == 2  # Finished second file
 
 
 def test_convert_tree_can_be_interrupted(tmp_path: Path) -> None:
@@ -128,7 +128,7 @@ def test_convert_tree_can_be_interrupted(tmp_path: Path) -> None:
 
     # Should have stopped after 2
     assert result["converted_count"] == 2
-    assert len(events) == 2
+    assert len(events) == 4  # (0, 1, 1, 2)
     assert len(discover_image_files(source_dir)) == 3  # 5 total - 2 converted
 
 
@@ -428,9 +428,9 @@ def test_convert_tree_stops_midway(tmp_path: Path) -> None:
 
     result = convert_tree(source_dir, on_progress=stop_callback)
 
-    assert len(processed_files) == 2
+    assert len(processed_files) == 4
     assert result["converted_count"] == 2
-    second_file_path = Path(processed_files[1])
+    second_file_path = Path(processed_files[3])
     assert not second_file_path.exists()
     assert second_file_path.with_suffix(".webp").exists()
 
