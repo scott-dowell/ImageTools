@@ -7,7 +7,8 @@ For any user-requested code change, follow this order:
 1. Create or confirm a GitHub issue for the work.
 2. Update CHANGELOG.md under [Unreleased] with a bullet that references the issue number.
 3. Implement the change and verify it with relevant tests.
-4. If the change affects the browser workflow or conversion UX, verify the behavior in the integrated browser using the test image fixture folder.
+4. If the change affects the browser workflow or conversion UX, verify the behavior in the integrated browser using a fresh test image fixture folder.
+    - IMPORTANT: Always run `python scripts/prepare_test_images.py` before each browser test session to ensure a clean, un-converted set of images and a fresh fixture folder.
 5. Commit the change and include a closing footer such as: Closes #<issue>.
 
 ## Required conventions

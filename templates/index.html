@@ -594,19 +594,21 @@
         pauseBtn.disabled = false;
         stopBtn.disabled = data.stop_requested === true;
         pauseBtn.innerHTML = isPaused ? '<i class="bi bi-play-fill me-1"></i>Resume' : '<i class="bi bi-pause-fill me-1"></i>Pause';
-        pauseBtn.className = isPaused ? 'btn btn-outline-success btn-sm' : 'btn btn-outline-warning btn-sm';
+        pauseBtn.className = isPaused ? 'btn btn-outline-success w-100 btn-sm text-nowrap' : 'btn btn-outline-warning w-100 btn-sm text-nowrap';
         
         if (data.stop_requested) {
           stopBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Stopping...';
         } else {
           stopBtn.innerHTML = '<i class="bi bi-stop-fill me-1"></i>Stop';
         }
+        stopBtn.className = 'btn btn-outline-danger w-100 btn-sm text-nowrap';
       } else {
         pauseBtn.disabled = true;
         stopBtn.disabled = true;
         pauseBtn.innerHTML = '<i class="bi bi-pause-fill me-1"></i>Pause';
-        pauseBtn.className = 'btn btn-outline-warning btn-sm';
+        pauseBtn.className = 'btn btn-outline-warning w-100 btn-sm text-nowrap';
         stopBtn.innerHTML = '<i class="bi bi-stop-fill me-1"></i>Stop';
+        stopBtn.className = 'btn btn-outline-danger w-100 btn-sm text-nowrap';
       }
 
       const percent = isRunning ? Math.round(data.progress_percent || 0) : 0;
