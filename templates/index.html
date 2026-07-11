@@ -647,6 +647,10 @@
       const isPaused = data.paused === true;
 
       // Update control buttons
+      convertBtn.disabled = isRunning;
+      scanBtn.disabled = isRunning;
+      browseBtn.disabled = isRunning;
+
       if (isRunning) {
         pauseBtn.disabled = false;
         stopBtn.disabled = data.stop_requested === true;
@@ -693,9 +697,17 @@
     convertBtn.addEventListener('click', async () => {
       const root = document.getElementById('rootFolder').value;
       const quality = document.getElementById('quality').value;
+
+      convertBtn.disabled = true;
+      scanBtn.disabled = true;
+      browseBtn.disabled = true;
+
       const data = await callApi('/api/convert', { root, quality });
       if (data.error) {
         summary.textContent = data.error;
+        convertBtn.disabled = false;
+        scanBtn.disabled = false;
+        browseBtn.disabled = false;
         return;
       }
       summary.textContent = 'Conversion started.';
