@@ -206,12 +206,12 @@
               </button>
               <div class="row g-2">
                 <div class="col-6">
-                  <button id="pauseBtn" class="btn btn-outline-warning w-100 btn-sm" disabled>
+                  <button id="pauseBtn" class="btn btn-outline-warning w-100 btn-sm text-nowrap" disabled>
                     <i class="bi bi-pause-fill me-1"></i>Pause
                   </button>
                 </div>
                 <div class="col-6">
-                  <button id="stopBtn" class="btn btn-outline-danger w-100 btn-sm" disabled>
+                  <button id="stopBtn" class="btn btn-outline-danger w-100 btn-sm text-nowrap" disabled>
                     <i class="bi bi-stop-fill me-1"></i>Stop
                   </button>
                 </div>
@@ -597,14 +597,21 @@
       // Update control buttons
       if (isRunning) {
         pauseBtn.disabled = false;
-        stopBtn.disabled = false;
+        stopBtn.disabled = data.stop_requested === true;
         pauseBtn.innerHTML = isPaused ? '<i class="bi bi-play-fill me-1"></i>Resume' : '<i class="bi bi-pause-fill me-1"></i>Pause';
         pauseBtn.className = isPaused ? 'btn btn-outline-success btn-sm' : 'btn btn-outline-warning btn-sm';
+        
+        if (data.stop_requested) {
+          stopBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Stopping...';
+        } else {
+          stopBtn.innerHTML = '<i class="bi bi-stop-fill me-1"></i>Stop';
+        }
       } else {
         pauseBtn.disabled = true;
         stopBtn.disabled = true;
         pauseBtn.innerHTML = '<i class="bi bi-pause-fill me-1"></i>Pause';
         pauseBtn.className = 'btn btn-outline-warning btn-sm';
+        stopBtn.innerHTML = '<i class="bi bi-stop-fill me-1"></i>Stop';
       }
 
       const percent = isRunning ? Math.round(data.progress_percent || 0) : 0;
@@ -654,8 +661,6 @@
     stopBtn.addEventListener('click', async () => {
       if (confirm('Stop conversion? The current file will finish first.')) {
         await callApi('/api/stop', {});
-        stopBtn.disabled = true;
-        stopBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Stopping...';
       }
     });
   </script>
