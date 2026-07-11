@@ -130,30 +130,6 @@
 
     <div class="card shadow-sm mb-4">
       <div class="card-header bg-white d-flex align-items-center">
-        <i class="bi bi-play-circle me-2 text-primary"></i>Controls
-      </div>
-      <div class="card-body">
-        <div class="row g-3 align-items-center">
-          <div class="col-auto">
-            <span class="text-secondary small fw-bold"><i class="bi bi-gear-fill me-1"></i>Controls:</span>
-          </div>
-          <div class="col-auto d-flex gap-2">
-            <button id="pauseBtn" class="btn btn-outline-warning btn-sm" style="width: 100px;" disabled>
-              <i class="bi bi-pause-fill me-1"></i>Pause
-            </button>
-            <button id="stopBtn" class="btn btn-outline-danger btn-sm" style="width: 100px;" disabled>
-              <i class="bi bi-stop-fill me-1"></i>Stop
-            </button>
-          </div>
-          <div class="col text-end text-muted small">
-            Current file will always complete before pausing or stopping.
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card shadow-sm mb-4">
-      <div class="card-header bg-white d-flex align-items-center">
         <i class="bi bi-folder2-open me-2 text-primary"></i>Configuration
       </div>
       <div class="card-body">
@@ -176,6 +152,27 @@
             <button id="convertBtn" class="btn btn-primary w-100">
               <i class="bi bi-play-fill me-1"></i>Convert
             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white d-flex align-items-center">
+        <i class="bi bi-play-circle me-2 text-primary"></i>Controls
+      </div>
+      <div class="card-body">
+        <div class="row g-3 align-items-center">
+          <div class="col-auto d-flex gap-2">
+            <button id="pauseBtn" class="btn btn-outline-warning btn-sm" style="width: 100px;" disabled>
+              <i class="bi bi-pause-fill me-1"></i>Pause
+            </button>
+            <button id="stopBtn" class="btn btn-outline-danger btn-sm" style="width: 100px;" disabled>
+              <i class="bi bi-stop-fill me-1"></i>Stop
+            </button>
+          </div>
+          <div class="col text-end text-muted small">
+            Current file will always complete before pausing or stopping.
           </div>
         </div>
       </div>

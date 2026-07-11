@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #27: Move controls card below the browse configuration card for a more logical workflow.
 - Issue #26: Replicate VideoTools card header style across all cards in the UI.
 - Issue #25: Implement Pause/Play and Stop functionality for active conversion jobs with a dedicated UI controls card.
 - Issue #24: Consolidate active job status and prioritize summary stats at the top of the interface.
