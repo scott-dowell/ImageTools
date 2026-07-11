@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #37: Restructure scan results UI and CSS to ensure the table scrolls vertically within the card and does not overlap the footer.
 - Issue #36: Align navbar brand to the left and settings/status to the right using a fluid layout to match VideoTools.
 - Issue #35: Relocate the control disclaimer text to the Controls card header.
 - Issue #34: Move scan result summary text to the card header for better space utilization.

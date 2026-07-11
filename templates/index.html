@@ -27,7 +27,15 @@
       overflow-y: auto;
       overflow-x: hidden;
       display: block;
-      padding-bottom: 1rem;
+      padding-bottom: 0;
+    }
+    .results-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid #dee2e6;
+      border-radius: 0.375rem;
     }
     .results-scroll table { margin-bottom: 0; }
   </style>
@@ -335,13 +343,13 @@
     function renderFolderResults(items) {
       const root = document.getElementById('rootFolder').value;
       folderSummary.innerHTML = `
-        <div class="border rounded overflow-hidden">
-          <div class="bg-light px-3 py-2 border-bottom small fw-semibold text-secondary d-flex align-items-center">
+        <div class="results-wrapper">
+          <div class="bg-light px-3 py-2 border-bottom small fw-semibold text-secondary d-flex align-items-center flex-shrink-0">
             <i class="bi bi-hdd-stack me-2 text-secondary"></i>Folder analysis
           </div>
           <div class="table-responsive results-scroll">
             <table class="table table-sm table-hover align-middle mb-0 folder-table">
-              <thead class="table-light">
+              <thead class="table-light sticky-top">
                 <tr>
                   <th scope="col" class="small text-secondary fw-semibold">FOLDER</th>
                   <th scope="col" class="text-end small text-secondary fw-semibold pe-3">IMAGES</th>
