@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #30: Remove the example placeholder text from the root folder input.
 - Issue #29: Move Quality setting to a new Settings dialog and rename the configuration card header.
 - Issue #28: Relocate convert button to the controls card as the primary action.
 - Issue #27: Move controls card below the browse configuration card for a more logical workflow.
