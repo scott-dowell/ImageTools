@@ -411,6 +411,7 @@
                   <th scope="col" class="small text-secondary fw-semibold text-end">SAVED</th>
                   <th scope="col" class="small text-secondary fw-semibold text-end">%</th>
                   <th scope="col" class="small text-secondary fw-semibold">STATUS</th>
+                  <th scope="col" class="text-end pe-3"></th>
                 </tr>
               </thead>
               <tbody class="small">
@@ -430,6 +431,25 @@
                     <td class="text-end text-success">${formatBytes(item.saved_bytes ?? 0)}</td>
                     <td class="text-end fw-semibold">${Math.round(item.savings_percent ?? 0)}%</td>
                     <td><span class="badge ${item.status === 'done' ? 'text-bg-success' : 'text-bg-secondary'}">${item.status || 'pending'}</span></td>
+                    <td class="text-end pe-2">
+                      <div class="dropdown">
+                        <button class="btn btn-link btn-sm text-secondary p-0 border-0" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false">
+                          <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm small">
+                          <li>
+                            <button class="dropdown-item d-flex align-items-center" onclick="copyToClipboard('${item.folder.replace(/\\/g, '/')}')">
+                              <i class="bi bi-clipboard me-2 text-primary"></i>Copy path
+                            </button>
+                          </li>
+                          <li>
+                            <button class="dropdown-item d-flex align-items-center" onclick="openExplorer('${item.folder.replace(/\\/g, '/')}')">
+                              <i class="bi bi-folder2-open me-2 text-warning"></i>Open in Explorer
+                            </button>
+                          </li>
+                        </ul>
+                      </div>
+                    </td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -567,6 +587,18 @@
         unitIndex += 1;
       }
       return `${size.toFixed(size >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+    }
+
+    async function copyToClipboard(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (err) {
+        console.error('Failed to copy: ', err);
+      }
+    }
+
+    async function openExplorer(path) {
+      await callApi('/api/open', { path });
     }
 
     async function callApi(path, payload) {

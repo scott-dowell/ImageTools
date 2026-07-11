@@ -315,6 +315,20 @@ def stop_conversion():
     return jsonify({"stop_requested": True})
 
 
+@app.route("/api/open", methods=["POST"])
+def open_folder():
+    payload = request.get_json(silent=True) or {}
+    path = payload.get("path") or ""
+    if not path:
+        return jsonify({"error": "No path specified"}), 400
+    
+    try:
+        os.startfile(os.path.normpath(path))
+        return jsonify({"status": "success"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/browse", methods=["GET"])
 def browse_folder():
     path = request.args.get("path") or ""

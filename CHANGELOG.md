@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #57: Fix clipping of folder action dropdowns by setting their boundary to the viewport.
+- Issue #56: Add "Copy Path" and "Open in Explorer" actions to each folder in the scan results table via a vertical ellipsis menu.
 - Issue #55: Replace native stop confirmation dialog with a styled Bootstrap modal.
 - Issue #54: Prevent "stuck" running state by adding try/finally block to conversion thread and verifying thread liveness before starting new jobs.
 - Issue #53: Reorder sidebar cards to follow a logical workflow: Input (Folder) -> Action (Controls) -> Status (Progress).
