@@ -232,8 +232,7 @@
             <div id="summary" class="text-secondary small">No scan performed yet.</div>
           </div>
           <div class="card-body d-flex flex-column" style="min-height: 0;">
-            <div id="folderSummary" class="flex-grow-1 d-flex flex-column mb-3" style="min-height: 0;"></div>
-            <div id="resultsMeta" class="small text-muted flex-shrink-0"></div>
+            <div id="folderSummary" class="flex-grow-1 d-flex flex-column" style="min-height: 0;"></div>
           </div>
         </div>
       </div>
@@ -313,7 +312,6 @@
     let _browseModalInstance = null;
     const summary = document.getElementById('summary');
     const folderSummary = document.getElementById('folderSummary');
-    const resultsMeta = document.getElementById('resultsMeta');
     const progressLabel = document.getElementById('progressLabel');
     const progressPercent = document.getElementById('progressPercent');
     const progressBar = document.getElementById('progressBar');
@@ -577,14 +575,11 @@
       if (data.error) {
         updateSessionSummary({ total: 0, folders: [], processed: 0, converted_count: 0, skipped_count: 0, saved_bytes: 0, state: 'idle', root });
         folderSummary.innerHTML = '';
-        resultsMeta.textContent = '';
       } else if (data.folders && data.folders.length) {
         updateSessionSummary({ total: data.count || 0, folders: data.folders, processed: 0, converted_count: 0, skipped_count: 0, saved_bytes: 0, state: 'idle', root: data.root });
         renderFolderResults(data.folders);
-        resultsMeta.innerHTML = '';
       } else {
         folderSummary.innerHTML = '<div class="text-muted small">No image folders found.</div>';
-        resultsMeta.textContent = '';
       }
     });
 
@@ -633,7 +628,6 @@
       if (data.state === 'done') {
         clearInterval(progressTimer);
         summary.textContent = `${data.converted_count} image(s) converted, ${data.skipped_count} skipped`;
-        resultsMeta.innerHTML = `<div class="small text-muted"><span class="fw-semibold">Completed:</span> ${data.completed_at || 'just now'}</div>`;
       }
     }
 
@@ -643,12 +637,10 @@
       const data = await callApi('/api/convert', { root, quality });
       if (data.error) {
         summary.textContent = data.error;
-        resultsMeta.textContent = '';
         return;
       }
       summary.textContent = 'Conversion started.';
       updateSessionSummary({ total: 0, processed: 0, converted_count: 0, skipped_count: 0, saved_bytes: 0, state: 'running', root });
-      resultsMeta.innerHTML = `<div class="small text-muted"><span class="fw-semibold">Run:</span> ${data.run ? data.run.root : root}</div>`;
       clearInterval(progressTimer);
       progressTimer = setInterval(updateProgress, 400);
     });
