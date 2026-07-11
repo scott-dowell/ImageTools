@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #32: Implement a two-column dashboard layout, moving Scan results to a dedicated right-hand panel.
 - Issue #31: Move the conversion control disclaimer text into the card header to save space.
 - Issue #30: Remove the example placeholder text from the root folder input.
 - Issue #29: Move Quality setting to a new Settings dialog and rename the configuration card header.

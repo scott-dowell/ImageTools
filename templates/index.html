@@ -102,87 +102,95 @@
       </div>
     </div>
 
-    <div class="card shadow-sm mb-4">
-      <div class="card-header bg-white d-flex align-items-center">
-        <i class="bi bi-cpu me-2 text-primary"></i>Progress
-      </div>
-      <div class="card-body">
-        <div class="row g-3 mb-3">
-          <div class="col-md-9">
-            <div class="small text-secondary d-flex align-items-center">
-              <i class="bi bi-file-earmark-image me-2 text-primary"></i>Current file
-            </div>
-            <div id="summaryCurrentFile" class="fw-semibold text-truncate small mt-1">Waiting to start</div>
-          </div>
-          <div class="col-md-3 text-end">
-            <div class="small text-secondary d-flex align-items-center justify-content-end">
-              <i class="bi bi-clock-history me-2 text-primary"></i>ETA
-            </div>
-            <div id="summaryEta" class="fw-semibold small mt-1">—</div>
-          </div>
-        </div>
-        
-        <div class="d-flex justify-content-between small text-secondary mb-1">
-          <span id="progressLabel"><i class="bi bi-info-circle me-1"></i>Idle</span>
-          <span id="progressPercent">0%</span>
-        </div>
-        <div class="progress" style="height: 12px; background-color: #e9ecef;">
-          <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
-        </div>
-        <div id="progressDetail" class="small text-muted mt-2 d-none">No conversion running.</div>
-      </div>
-    </div>
-
-    <div class="card shadow-sm mb-4">
-      <div class="card-header bg-white d-flex align-items-center">
-        <i class="bi bi-folder2-open me-2 text-primary"></i>Folder to Convert
-      </div>
-      <div class="card-body">
-        <div class="row g-3 align-items-end">
-          <div class="col-md-9">
-            <label class="form-label text-secondary small fw-bold">Root folder</label>
-            <div class="input-group">
-              <input id="rootFolder" class="form-control" placeholder="" />
-              <button id="browseBtn" class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#browseModal">Browse…</button>
-            </div>
-          </div>
-          <div class="col-md-3 d-flex gap-2">
-            <button id="scanBtn" class="btn btn-outline-primary w-100">
-              <i class="bi bi-search me-1"></i>Scan
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card shadow-sm mb-4">
-      <div class="card-header bg-white d-flex align-items-center justify-content-between">
-        <span><i class="bi bi-play-circle me-2 text-primary"></i>Controls</span>
-        <span class="text-muted small fw-normal" style="font-size: 0.7rem;">Current file will always complete before pausing or stopping.</span>
-      </div>
-      <div class="card-body">
-        <div class="d-grid gap-2">
-          <button id="convertBtn" class="btn btn-primary w-100">
-            <i class="bi bi-play-fill me-1"></i>Convert
-          </button>
-          <div class="row g-2">
-            <div class="col-6">
-              <button id="pauseBtn" class="btn btn-outline-warning w-100 btn-sm" disabled>
-                <i class="bi bi-pause-fill me-1"></i>Pause
-              </button>
-            </div>
-            <div class="col-6">
-              <button id="stopBtn" class="btn btn-outline-danger w-100 btn-sm" disabled>
-                <i class="bi bi-stop-fill me-1"></i>Stop
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <div class="row g-4">
-      <div class="col-12">
+      <!-- Sidebar: Progress, Configuration, and Controls -->
+      <div class="col-lg-4 d-flex flex-column gap-3">
+        
+        <div class="card shadow-sm">
+          <div class="card-header bg-white d-flex align-items-center">
+            <i class="bi bi-cpu me-2 text-primary"></i>Progress
+          </div>
+          <div class="card-body">
+            <div class="row g-2 mb-3">
+              <div class="col-12">
+                <div class="small text-secondary d-flex align-items-center">
+                  <i class="bi bi-file-earmark-image me-2 text-primary"></i>Current file
+                </div>
+                <div id="summaryCurrentFile" class="fw-semibold text-truncate small mt-1">Waiting to start</div>
+              </div>
+              <div class="col-12 mt-2">
+                <div class="small text-secondary d-flex align-items-center justify-content-between">
+                  <span><i class="bi bi-clock-history me-2 text-primary"></i>ETA</span>
+                  <span id="summaryEta" class="fw-semibold small">—</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="d-flex justify-content-between small text-secondary mb-1">
+              <span id="progressLabel"><i class="bi bi-info-circle me-1"></i>Idle</span>
+              <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress" style="height: 12px; background-color: #e9ecef;">
+              <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+            </div>
+            <div id="progressDetail" class="small text-muted mt-2 d-none">No conversion running.</div>
+          </div>
+        </div>
+
+        <div class="card shadow-sm">
+          <div class="card-header bg-white d-flex align-items-center">
+            <i class="bi bi-folder2-open me-2 text-primary"></i>Folder to Convert
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label text-secondary small fw-bold">Root folder</label>
+                <div class="input-group input-group-sm">
+                  <input id="rootFolder" class="form-control" placeholder="" />
+                  <button id="browseBtn" class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#browseModal">Browse…</button>
+                </div>
+              </div>
+              <div class="col-12">
+                <button id="scanBtn" class="btn btn-outline-primary w-100 btn-sm">
+                  <i class="bi bi-search me-1"></i>Scan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card shadow-sm">
+          <div class="card-header bg-white d-flex align-items-center justify-content-between">
+            <span><i class="bi bi-play-circle me-2 text-primary"></i>Controls</span>
+          </div>
+          <div class="card-body">
+            <div class="d-grid gap-2">
+              <button id="convertBtn" class="btn btn-primary w-100">
+                <i class="bi bi-play-fill me-1"></i>Convert
+              </button>
+              <div class="row g-2">
+                <div class="col-6">
+                  <button id="pauseBtn" class="btn btn-outline-warning w-100 btn-sm" disabled>
+                    <i class="bi bi-pause-fill me-1"></i>Pause
+                  </button>
+                </div>
+                <div class="col-6">
+                  <button id="stopBtn" class="btn btn-outline-danger w-100 btn-sm" disabled>
+                    <i class="bi bi-stop-fill me-1"></i>Stop
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="text-center text-muted mt-2" style="font-size: 0.65rem;">
+              Current file will always complete before pausing or stopping.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Main Content: Scan Results -->
+      <div class="col-lg-8">
         <div class="card shadow-sm h-100 results-card">
           <div class="card-header bg-white d-flex align-items-center">
             <i class="bi bi-card-checklist me-2 text-primary"></i>Scan result
