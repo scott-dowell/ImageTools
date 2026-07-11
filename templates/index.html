@@ -130,21 +130,27 @@
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="browseModalLabel">Choose folder</h5>
+          <h5 class="modal-title" id="browseModalLabel">
+            <i class="bi bi-folder2-open me-2 text-warning"></i>Choose folder
+          </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body">
-          <div class="d-flex gap-2 mb-3 flex-wrap">
-            <button id="browseParentBtn" class="btn btn-outline-secondary btn-sm">Up one level</button>
-            <button id="browseRefreshBtn" class="btn btn-outline-secondary btn-sm">Refresh</button>
-            <div id="browsePath" class="fw-semibold small text-secondary align-self-center"></div>
+        <div class="modal-body p-0">
+          <div class="px-3 py-2 border-bottom">
+            <ol class="breadcrumb mb-0 small" id="breadcrumb"></ol>
           </div>
-          <div id="browseStatus" class="small text-muted mb-2">Loading folders…</div>
-          <div id="browseList" class="list-group"></div>
+          <div id="browseList" class="list-group list-group-flush" style="min-height:320px;">
+            <div class="text-center text-secondary py-5">
+              <div class="spinner-border spinner-border-sm"></div> Loading…
+            </div>
+          </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button id="browseSelectBtn" type="button" class="btn btn-primary">Use selected folder</button>
+        <div class="modal-footer d-flex align-items-center gap-1">
+          <div class="flex-grow-1 text-secondary small" id="selectedPathDisplay">No folder selected</div>
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button id="browseSelectBtn" type="button" class="btn btn-primary btn-sm" disabled>
+            <i class="bi bi-folder-check me-1"></i>Select Folder
+          </button>
         </div>
       </div>
     </div>
@@ -158,14 +164,11 @@
     const rootFolderInput = document.getElementById('rootFolder');
     const browseModal = document.getElementById('browseModal');
     const browseList = document.getElementById('browseList');
-    const browseStatus = document.getElementById('browseStatus');
-    const browsePath = document.getElementById('browsePath');
-    const browseParentBtn = document.getElementById('browseParentBtn');
-    const browseRefreshBtn = document.getElementById('browseRefreshBtn');
+    const breadcrumb = document.getElementById('breadcrumb');
+    const selectedPathDisplay = document.getElementById('selectedPathDisplay');
     const browseSelectBtn = document.getElementById('browseSelectBtn');
-    let browseCurrentPath = '';
-    let browseParentPath = '';
-    let browseSelectedPath = '';
+    let _selectedPath = null;
+    let _browseModalInstance = null;
     const summary = document.getElementById('summary');
     const folderSummary = document.getElementById('folderSummary');
     const resultsMeta = document.getElementById('resultsMeta');
@@ -260,35 +263,101 @@
     }
 
     async function loadBrowseFolders(path = '') {
-      browseStatus.textContent = 'Loading folders…';
-      browseList.innerHTML = '';
-      const response = await fetch(`/api/browse?path=${encodeURIComponent(path)}`);
-      const data = await response.json();
-      browseCurrentPath = data.path || '';
-      browseParentPath = data.parent || '';
-      browseSelectedPath = data.path || '';
-      browseStatus.textContent = data.path ? `Showing subfolders for ${data.path}` : 'Browsing drives and folders';
-      browsePath.textContent = data.path || 'Root';
-      browseParentBtn.disabled = !browseParentPath;
-      if (!data.dirs || !data.dirs.length) {
-        browseList.innerHTML = '<div class="list-group-item text-muted">No subfolders found.</div>';
+      browseList.innerHTML = '<div class="text-center text-secondary py-5"><div class="spinner-border spinner-border-sm"></div> Loading…</div>';
+      try {
+        const response = await fetch(`/api/browse?path=${encodeURIComponent(path)}`);
+        const data = await response.json();
+        if (data.error) {
+          browseList.innerHTML = `<div class="p-3 text-danger">${data.error}</div>`;
+          return;
+        }
+        renderBreadcrumb(data.path, data.parent);
+        renderListing(data.dirs, data.path, data.parent);
+      } catch (e) {
+        browseList.innerHTML = `<div class="p-3 text-danger">Unable to load folders. ${e.message}</div>`;
+      }
+    }
+
+    function renderBreadcrumb(currentPath, parent) {
+      breadcrumb.innerHTML = '';
+      if (!currentPath) {
+        breadcrumb.innerHTML = '<li class="breadcrumb-item active">This PC</li>';
         return;
       }
-      browseList.innerHTML = data.dirs.map((dir) => `
-        <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-path="${dir.full_path}">
-          <span><i class="bi bi-folder2-open me-2 text-warning"></i>${dir.name}</span>
-          <span class="small text-muted">${dir.has_children ? 'Open' : 'Empty'}</span>
-        </button>
-      `).join('');
+      const normalizedPath = currentPath.replace(/\\/g, '/');
+      const parts = normalizedPath.split('/').filter(p => p.length > 0);
+      const crumbs = [{ label: 'This PC', path: '' }];
+      let built = '';
+      for (const p of parts) {
+        if (p.endsWith(':')) {
+           built = p + '/';
+        } else {
+           built = built ? (built.endsWith('/') ? built + p : built + '/' + p) : p;
+        }
+        crumbs.push({ label: p, path: built });
+      }
+      crumbs.forEach((c, i) => {
+        const li = document.createElement('li');
+        const isLast = i === crumbs.length - 1;
+        li.className = 'breadcrumb-item' + (isLast ? ' active' : '');
+        if (!isLast) {
+          const a = document.createElement('a');
+          a.href = '#';
+          a.textContent = c.label;
+          a.style.textDecoration = 'none';
+          a.onclick = (e) => { e.preventDefault(); loadBrowseFolders(c.path); };
+          li.appendChild(a);
+        } else {
+          li.textContent = c.label;
+        }
+        breadcrumb.appendChild(li);
+      });
+    }
+
+    function renderListing(dirs, currentPath, parent) {
+      browseList.innerHTML = '';
+      const ul = document.createElement('ul');
+      ul.className = 'list-group list-group-flush';
+
+      if (currentPath) {
+        // Use This Folder entry
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex align-items-center gap-2 py-2 bg-primary-subtle';
+        li.innerHTML = `
+          <i class="bi bi-folder2-open text-warning"></i>
+          <span class="flex-grow-1 fw-semibold small text-truncate">${currentPath}</span>
+          <button class="btn btn-sm btn-primary py-0 px-2" onclick="selectFolder('${currentPath.replace(/\\/g, '/')}')">Use This Folder</button>
+        `;
+        ul.appendChild(li);
+      }
+
+      dirs.forEach(d => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item list-group-item-action d-flex align-items-center gap-2 py-2';
+        li.style.cursor = 'pointer';
+        li.innerHTML = `
+          <i class="bi bi-folder text-warning"></i>
+          <span class="flex-grow-1 small text-truncate">${d.name}</span>
+          ${d.has_children ? '<i class="bi bi-chevron-right text-secondary small"></i>' : ''}
+        `;
+        li.onclick = () => loadBrowseFolders(d.full_path);
+        ul.appendChild(li);
+      });
+      browseList.appendChild(ul);
+    }
+
+    function selectFolder(path) {
+      _selectedPath = path;
+      selectedPathDisplay.textContent = path;
+      browseSelectBtn.disabled = false;
     }
 
     function chooseFolder() {
-      browseSelectedPath = browseCurrentPath || rootFolderInput.value || '';
-      if (browseSelectedPath) {
-        rootFolderInput.value = browseSelectedPath;
+      if (_selectedPath) {
+        rootFolderInput.value = _selectedPath;
+        localStorage.setItem('ic_last_folder', _selectedPath);
       }
-      const modal = bootstrap.Modal.getInstance(browseModal) || new bootstrap.Modal(browseModal);
-      modal.hide();
+      if (_browseModalInstance) _browseModalInstance.hide();
     }
 
     function formatEta(seconds) {
@@ -323,33 +392,15 @@
     }
 
     browseBtn.addEventListener('click', async () => {
-      const modal = bootstrap.Modal.getOrCreateInstance(browseModal);
-      modal.show();
-      await loadBrowseFolders(rootFolderInput.value || '');
-    });
-
-    browseParentBtn.addEventListener('click', async () => {
-      if (!browseParentPath) {
-        await loadBrowseFolders('');
-        return;
-      }
-      await loadBrowseFolders(browseParentPath);
-    });
-
-    browseRefreshBtn.addEventListener('click', async () => {
-      await loadBrowseFolders(browseCurrentPath || rootFolderInput.value || '');
+      _selectedPath = null;
+      selectedPathDisplay.textContent = 'No folder selected';
+      browseSelectBtn.disabled = true;
+      _browseModalInstance = bootstrap.Modal.getOrCreateInstance(browseModal);
+      _browseModalInstance.show();
+      await loadBrowseFolders(localStorage.getItem('ic_last_folder') || rootFolderInput.value || '');
     });
 
     browseSelectBtn.addEventListener('click', chooseFolder);
-
-    browseList.addEventListener('click', async (event) => {
-      const button = event.target.closest('[data-path]');
-      if (!button) return;
-      const folderPath = button.getAttribute('data-path');
-      if (folderPath) {
-        await loadBrowseFolders(folderPath);
-      }
-    });
 
     scanBtn.addEventListener('click', async () => {
       const root = document.getElementById('rootFolder').value;

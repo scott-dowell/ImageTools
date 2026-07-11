@@ -1,6 +1,8 @@
 import os
 import shutil
 import threading
+import ctypes
+import string
 from datetime import datetime
 from pathlib import Path, PurePath
 
@@ -10,6 +12,29 @@ from converter import build_folder_progress_summary, convert_tree, discover_imag
 
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
+
+_SYSTEM_FOLDERS = {
+    "system volume information", "$recycle.bin", "$windows.~bt", "$windows.~ws",
+    "windows", "windows.old", "parent folder", "program files", "program files (x86)",
+    "programdata", "recovery", "boot", "perflogs", "msocache",
+}
+
+def _volume_label(drive: str) -> str:
+    """Return e.g. 'C:/ (Local Disk)' or just 'C:/' if no label."""
+    buf = ctypes.create_unicode_buffer(256)
+    try:
+        root = drive.replace("/", "\\")
+        if not root.endswith("\\"):
+            root += "\\"
+        ok = ctypes.windll.kernel32.GetVolumeInformationW(
+            root, buf, len(buf), None, None, None, None, 0
+        )
+        if ok and buf.value:
+            return f"{drive} ({buf.value})"
+    except Exception:
+        pass
+    return drive
+
 
 _run_lock = threading.Lock()
 _run_state = {
@@ -95,22 +120,6 @@ def write_uploaded_folder(uploads: list, destination_root: str | Path, folder_na
 
 def _normalize_folder_path(path: str) -> str:
     return str(Path(path).resolve()).replace("\\", "/")
-
-
-def _path_has_directory_children(path: Path) -> bool:
-    try:
-        with os.scandir(path) as entries:
-            for entry in entries:
-                if entry.name.startswith("."):
-                    continue
-                try:
-                    if entry.is_dir():
-                        return True
-                except (PermissionError, OSError):
-                    continue
-    except (PermissionError, FileNotFoundError, NotADirectoryError, OSError):
-        return False
-    return False
 
 
 def _resolve_folder_path(path: str) -> str:
@@ -261,31 +270,85 @@ def scan_folder():
 @app.route("/api/browse", methods=["GET"])
 def browse_folder():
     path = request.args.get("path") or ""
-    try:
-        base_path = Path(path).expanduser() if path else Path.cwd()
-        resolved_path = base_path.resolve()
-        if not resolved_path.exists():
-            resolved_path.mkdir(parents=True, exist_ok=True)
-    except Exception:
-        resolved_path = Path.cwd()
+
+    def _safe_isdir(path_str: str) -> bool:
+        try:
+            return os.path.isdir(path_str)
+        except OSError:
+            return False
+
+    def _safe_exists(path_str: str) -> bool:
+        try:
+            return os.path.exists(path_str)
+        except OSError:
+            return False
+
+    if path:
+        path = os.path.normpath(path)
+        while path and not _safe_isdir(path):
+            parent = os.path.dirname(path)
+            if parent == path:
+                path = ""
+                break
+            path = parent
+
+    if not path:
+        drives = []
+        for letter in string.ascii_uppercase:
+            drive = letter + ":/"
+            if _safe_exists(drive):
+                drives.append({
+                    "name": _volume_label(drive),
+                    "full_path": drive,
+                    "has_children": True,
+                })
+        return jsonify({"path": "", "parent": None, "dirs": drives})
+
+    parent = os.path.dirname(path)
+    if parent == path:
+        parent = None
 
     directories = []
     try:
-        children = sorted(resolved_path.iterdir(), key=lambda item: item.name.lower())
-    except (PermissionError, FileNotFoundError, NotADirectoryError, OSError):
-        children = []
+        entries = sorted(os.scandir(path), key=lambda e: e.name.lower())
+        for entry in entries:
+            try:
+                if not entry.is_dir(follow_symlinks=False):
+                    continue
+                if entry.name.startswith("."):
+                    continue
+                if entry.name.lower() in _SYSTEM_FOLDERS:
+                    continue
+                
+                attrs = entry.stat(follow_symlinks=False).st_file_attributes
+                if attrs & 0x2 or attrs & 0x4:  # HIDDEN | SYSTEM
+                    continue
 
-    for child in children:
-        if not child.name.startswith(".") and child.is_dir():
-            directories.append({
-                "name": child.name,
-                "full_path": str(child),
-                "has_children": _path_has_directory_children(child),
-            })
+                has_children = False
+                try:
+                    with os.scandir(entry.path) as sub_entries:
+                        for sub in sub_entries:
+                            if sub.is_dir(follow_symlinks=False) and sub.name.lower() not in _SYSTEM_FOLDERS:
+                                has_children = True
+                                break
+                except PermissionError:
+                    pass
+
+                directories.append({
+                    "name": entry.name,
+                    "full_path": entry.path.replace("\\", "/"),
+                    "has_children": has_children,
+                })
+            except (PermissionError, OSError):
+                continue
+    except PermissionError:
+        return jsonify({"error": "Permission denied: unable to scan this folder."})
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
     return jsonify({
-        "path": str(resolved_path),
-        "parent": str(resolved_path.parent) if resolved_path.parent != resolved_path else None,
+        "path": path.replace("\\", "/"),
+        "parent": parent.replace("\\", "/") if parent else None,
         "dirs": directories,
     })
 

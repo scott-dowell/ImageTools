@@ -65,7 +65,7 @@ def test_browse_folder_skips_children_that_raise_permission_error(monkeypatch: o
 
     assert response.status_code == 200
     payload = response.get_json()
-    assert payload["path"] == str(root)
+    assert payload["path"].replace("\\", "/") == str(root).replace("\\", "/")
     assert "safe" in [item["name"] for item in payload["dirs"]]
 
 
