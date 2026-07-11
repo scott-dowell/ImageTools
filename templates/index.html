@@ -67,7 +67,7 @@
   <div class="container-fluid flex-grow-1 d-flex flex-column" style="min-height: 0; padding: 1.5rem; overflow: hidden;">
 
     <div class="row g-3 mb-3 flex-shrink-0">
-      <div class="col-md-3">
+      <div class="col">
         <div class="card shadow-sm h-100 border-0 border-start border-4 border-primary">
           <div class="card-body">
             <div class="small text-secondary d-flex align-items-center">
@@ -78,7 +78,18 @@
           </div>
         </div>
       </div>
-      <div class="col-md-3">
+      <div class="col">
+        <div class="card shadow-sm h-100 border-0 border-start border-4 border-secondary">
+          <div class="card-body">
+            <div class="small text-secondary d-flex align-items-center">
+              <i class="bi bi-folder me-2 text-secondary"></i>Resources
+            </div>
+            <div id="summaryFolders" class="fs-4 fw-semibold mt-1">0 <span class="text-muted" style="font-size: 0.75rem; font-weight: normal;">folders</span></div>
+            <div id="summarySize" class="small text-muted">0 B total</div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
         <div class="card shadow-sm h-100 border-0 border-start border-4 border-success">
           <div class="card-body">
             <div class="small text-secondary d-flex align-items-center">
@@ -89,7 +100,7 @@
           </div>
         </div>
       </div>
-      <div class="col-md-3">
+      <div class="col">
         <div class="card shadow-sm h-100 border-0 border-start border-4 border-warning">
           <div class="card-body">
             <div class="small text-secondary d-flex align-items-center">
@@ -100,7 +111,7 @@
           </div>
         </div>
       </div>
-      <div class="col-md-3">
+      <div class="col">
         <div class="card shadow-sm h-100 border-0 border-start border-4 border-info">
           <div class="card-body">
             <div class="small text-secondary d-flex align-items-center">
@@ -304,6 +315,8 @@
     const summarySkippedSub = document.getElementById('summarySkippedSub');
     const summarySaved = document.getElementById('summarySaved');
     const summarySavedSub = document.getElementById('summarySavedSub');
+    const summaryFolders = document.getElementById('summaryFolders');
+    const summarySize = document.getElementById('summarySize');
     const summaryCurrentFile = document.getElementById('summaryCurrentFile');
     const summaryEta = document.getElementById('summaryEta');
     let progressTimer = null;
@@ -326,8 +339,16 @@
       const percentComplete = total > 0 ? Math.round((processed / total) * 100) : 0;
       const convertedPercent = total > 0 ? Math.round((converted / total) * 100) : 0;
 
+      const folders = data.folders || [];
+      const folderCount = folders.length;
+      const totalSize = folders.reduce((acc, f) => acc + (f.size_before_bytes || 0), 0);
+
       summaryTotal.textContent = total;
       summaryTotalSub.textContent = data.root ? `Root: ${data.root}` : 'Waiting to scan';
+      
+      summaryFolders.innerHTML = `${folderCount} <span class="text-muted" style="font-size: 0.75rem; font-weight: normal;">folders</span>`;
+      summarySize.textContent = `${formatBytes(totalSize)} total`;
+
       summaryConverted.textContent = converted;
       summaryConvertedSub.textContent = `${convertedPercent}% complete`;
       summarySkipped.textContent = skipped;
@@ -543,11 +564,11 @@
       const data = await callApi('/api/scan', { root });
       summary.textContent = data.error ? data.error : `${data.count} image(s) found under ${data.root}`;
       if (data.error) {
-        updateSessionSummary({ total: 0, processed: 0, converted_count: 0, skipped_count: 0, saved_bytes: 0, state: 'idle', root });
+        updateSessionSummary({ total: 0, folders: [], processed: 0, converted_count: 0, skipped_count: 0, saved_bytes: 0, state: 'idle', root });
         folderSummary.innerHTML = '';
         resultsMeta.textContent = '';
       } else if (data.folders && data.folders.length) {
-        updateSessionSummary({ total: data.count || 0, processed: 0, converted_count: 0, skipped_count: 0, saved_bytes: 0, state: 'idle', root: data.root });
+        updateSessionSummary({ total: data.count || 0, folders: data.folders, processed: 0, converted_count: 0, skipped_count: 0, saved_bytes: 0, state: 'idle', root: data.root });
         renderFolderResults(data.folders);
         resultsMeta.innerHTML = '';
       } else {

@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #45: Add a new summary card for Folder count and Total images size to the dashboard header.
 - Issue #44: Fix hidden overflow cropping on the dashboard row that was clipping card bottom borders regardless of content height.
 - Issue #43: Remove footer to eliminate card bottom clipping caused by overflow constraints in the fixed-height layout.
 - Issue #42: Fix card clipping issue by removing fixed-top navbar and allowing flexbox to naturally manage viewport height without padding offsets.
