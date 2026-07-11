@@ -37,6 +37,7 @@ def _volume_label(drive: str) -> str:
 
 
 _run_lock = threading.Lock()
+_current_thread = None
 _run_state = {
     "state": "idle",
     "phase": "idle",
@@ -216,47 +217,60 @@ def _on_progress(processed: int, total: int, current_path: str, conversion_resul
 
 
 def _run_conversion(root: str, quality: int) -> None:
-    folder_summary = summarize_folder_status(root)
-    discovered_files = discover_image_files(root)
-    _update_run_state(
-        state="running",
-        phase="converting",
-        root=root,
-        total=len(discovered_files),
-        processed=0,
-        converted_count=0,
-        skipped_count=0,
-        current_file="",
-        progress_percent=0.0,
-        saved_bytes=0,
-        started_at=datetime.utcnow(),
-        completed_at=None,
-        result=None,
-        folders=folder_summary,
-        processed_paths=[],
-        completed_paths=[],
-        paused=False,
-        stop_requested=False,
-    )
-    result = convert_tree(root, quality=quality, on_progress=_on_progress)
-    with _run_lock:
-        folder_progress = result.get("folder_progress", _run_state.get("folders", []))
-        for folder in folder_progress:
-            if folder.get("status") in {"converting", "pending"} and folder.get("progress", 0) >= 100:
-                folder["status"] = "done"
-            elif folder.get("status") == "converting":
-                folder["status"] = "done"
+    try:
+        folder_summary = summarize_folder_status(root)
+        discovered_files = discover_image_files(root)
+        _update_run_state(
+            state="running",
+            phase="converting",
+            root=root,
+            total=len(discovered_files),
+            processed=0,
+            converted_count=0,
+            skipped_count=0,
+            current_file="",
+            progress_percent=0.0,
+            saved_bytes=0,
+            started_at=datetime.utcnow(),
+            completed_at=None,
+            result=None,
+            folders=folder_summary,
+            processed_paths=[],
+            completed_paths=[],
+            paused=False,
+            stop_requested=False,
+        )
+        result = convert_tree(root, quality=quality, on_progress=_on_progress)
+        with _run_lock:
+            folder_progress = result.get("folder_progress", _run_state.get("folders", []))
+            for folder in folder_progress:
+                if folder.get("status") in {"converting", "pending"} and folder.get("progress", 0) >= 100:
+                    folder["status"] = "done"
+                elif folder.get("status") == "converting":
+                    folder["status"] = "done"
 
-        _run_state["folders"] = folder_progress
+            _run_state["folders"] = folder_progress
 
-    _update_run_state(
-        state="done",
-        phase="complete",
-        converted_count=result.get("converted_count", 0),
-        skipped_count=result.get("skipped_count", 0),
-        completed_at=datetime.utcnow(),
-        result=result,
-    )
+        _update_run_state(
+            state="done",
+            phase="complete",
+            converted_count=result.get("converted_count", 0),
+            skipped_count=result.get("skipped_count", 0),
+            completed_at=datetime.utcnow(),
+            result=result,
+        )
+    except Exception as e:
+        _update_run_state(
+            state="done",
+            phase="complete",
+            result={"error": str(e)},
+            completed_at=datetime.utcnow(),
+        )
+    finally:
+        global _current_thread
+        with _run_lock:
+            if _current_thread == threading.current_thread():
+                _current_thread = None
 
 
 @app.route("/")
@@ -396,10 +410,16 @@ def convert_folder():
         return jsonify({"error": "No root folder specified"}), 400
 
     with _run_lock:
+        global _current_thread
         if _run_state["state"] == "running":
-            return jsonify({"error": "A conversion is already running"}), 409
+            if _current_thread and _current_thread.is_alive():
+                return jsonify({"error": "A conversion is already running"}), 409
+            else:
+                # Thread died or state is inconsistent; reset it
+                _run_state["state"] = "idle"
 
-    threading.Thread(target=_run_conversion, args=(root, quality), daemon=True).start()
+    _current_thread = threading.Thread(target=_run_conversion, args=(root, quality), daemon=True)
+    _current_thread.start()
     return jsonify({"status": "started", "run": _run_state_for_json()})
 
 

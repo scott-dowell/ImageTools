@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #54: Prevent "stuck" running state by adding try/finally block to conversion thread and verifying thread liveness before starting new jobs.
 - Issue #53: Reorder sidebar cards to follow a logical workflow: Input (Folder) -> Action (Controls) -> Status (Progress).
 - Issue #52: Ensure Pause and Stop buttons maintain consistent 50% width and alignment during conversion.
 - Issue #51: Remove unnecessary results metadata text (Run/Completed info) from the bottom of the scan results table.
