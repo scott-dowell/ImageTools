@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #29: Fix bottom-edge clipping on the scan results card by removing vertical gutter pressure in the main dashboard row.
 - Issue #28: Fix scan results table scrolling so overflow is clipped to the panel and scrollbars appear inside the table area.
 - Issue #27: Add run.ps1 script for streamlined development startup.
 - Issue #26: Fix conversion startup polling race so the UI does not stay on stale previous scan details.
