@@ -14,6 +14,7 @@
     .card-body { flex: 1; overflow-y: auto; min-height: 0; }
     .folder-table { width: 100%; table-layout: fixed; }
     .results-card { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    .results-card .card-body { overflow: hidden; }
     .folder-table th, .folder-table td { 
       white-space: nowrap; 
       overflow: hidden; 
@@ -139,7 +140,7 @@
       </div>
     </div>
 
-    <div class="row g-4 flex-grow-1" style="min-height: 0; overflow: visible; padding-bottom: 16px;">
+    <div class="row g-4 flex-grow-1" style="min-height: 0; overflow: hidden; padding-bottom: 16px;">
       <!-- Sidebar: Configuration, Controls, and Progress -->
       <div class="col-lg-4 d-flex flex-column gap-3 overflow-auto" style="min-height: 0;">
         
@@ -227,8 +228,8 @@
       </div>
 
       <!-- Main Content: Scan Results -->
-      <div class="col-lg-8 d-flex flex-column" style="min-height: 0;">
-        <div class="card shadow-sm results-card flex-grow-1 overflow-hidden">
+      <div class="col-lg-8 d-flex flex-column" style="min-height: 0; height: 100%; overflow: hidden;">
+        <div class="card shadow-sm results-card flex-grow-1 h-100 overflow-hidden">
           <div class="card-header bg-white d-flex align-items-center justify-content-between flex-shrink-0">
             <div class="d-flex align-items-center">
               <i class="bi bi-card-checklist me-2 text-primary"></i>Scan result
@@ -641,56 +642,74 @@
     });
 
     async function updateProgress() {
-      const response = await fetch('/api/progress');
-      const data = await response.json();
-      const isRunning = data.state === 'running';
-      const isPaused = data.paused === true;
+      try {
+        const response = await fetch('/api/progress', { cache: 'no-store' });
+        const data = await response.json();
+        const isRunning = data.state === 'running';
+        const isStarting = data.state === 'starting';
+        const isActive = isRunning || isStarting;
+        const isPaused = data.paused === true;
 
-      // Update control buttons
-      convertBtn.disabled = isRunning;
-      scanBtn.disabled = isRunning;
-      browseBtn.disabled = isRunning;
+        // Update control buttons
+        convertBtn.disabled = isActive;
+        scanBtn.disabled = isActive;
+        browseBtn.disabled = isActive;
 
-      if (isRunning) {
-        pauseBtn.disabled = false;
-        stopBtn.disabled = data.stop_requested === true;
-        pauseBtn.innerHTML = isPaused ? '<i class="bi bi-play-fill me-1"></i>Resume' : '<i class="bi bi-pause-fill me-1"></i>Pause';
-        pauseBtn.className = isPaused ? 'btn btn-outline-success w-100 btn-sm text-nowrap' : 'btn btn-outline-warning w-100 btn-sm text-nowrap';
-        
-        if (data.stop_requested) {
-          stopBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Stopping...';
+        if (isRunning) {
+          pauseBtn.disabled = false;
+          stopBtn.disabled = data.stop_requested === true;
+          pauseBtn.innerHTML = isPaused ? '<i class="bi bi-play-fill me-1"></i>Resume' : '<i class="bi bi-pause-fill me-1"></i>Pause';
+          pauseBtn.className = isPaused ? 'btn btn-outline-success w-100 btn-sm text-nowrap' : 'btn btn-outline-warning w-100 btn-sm text-nowrap';
+          
+          if (data.stop_requested) {
+            stopBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Stopping...';
+          } else {
+            stopBtn.innerHTML = '<i class="bi bi-stop-fill me-1"></i>Stop';
+          }
+          stopBtn.className = 'btn btn-outline-danger w-100 btn-sm text-nowrap';
         } else {
+          pauseBtn.disabled = true;
+          stopBtn.disabled = true;
+          pauseBtn.innerHTML = '<i class="bi bi-pause-fill me-1"></i>Pause';
+          pauseBtn.className = 'btn btn-outline-warning w-100 btn-sm text-nowrap';
           stopBtn.innerHTML = '<i class="bi bi-stop-fill me-1"></i>Stop';
+          stopBtn.className = 'btn btn-outline-danger w-100 btn-sm text-nowrap';
         }
-        stopBtn.className = 'btn btn-outline-danger w-100 btn-sm text-nowrap';
-      } else {
-        pauseBtn.disabled = true;
-        stopBtn.disabled = true;
-        pauseBtn.innerHTML = '<i class="bi bi-pause-fill me-1"></i>Pause';
-        pauseBtn.className = 'btn btn-outline-warning w-100 btn-sm text-nowrap';
-        stopBtn.innerHTML = '<i class="bi bi-stop-fill me-1"></i>Stop';
-        stopBtn.className = 'btn btn-outline-danger w-100 btn-sm text-nowrap';
-      }
 
-      const percent = isRunning ? Math.round(data.progress_percent || 0) : 0;
-      updateSessionSummary(data);
-      progressLabel.textContent = isRunning ? (isPaused ? 'Paused' : 'Converting…') : 'Idle';
-      progressPercent.textContent = isRunning ? `${percent}%` : '0%';
-      progressBar.style.width = isRunning ? `${percent}%` : '0%';
-      
-      if (isPaused) {
-        progressBar.classList.remove('progress-bar-animated');
-      } else {
-        progressBar.classList.add('progress-bar-animated');
-      }
+        const percent = isActive ? Math.round(data.progress_percent || 0) : 0;
+        updateSessionSummary(data);
+        if (isStarting) {
+          progressLabel.textContent = 'Starting…';
+        } else if (isRunning) {
+          progressLabel.textContent = isPaused ? 'Paused' : 'Converting…';
+        } else {
+          progressLabel.textContent = 'Idle';
+        }
+        progressPercent.textContent = isActive ? `${percent}%` : '0%';
+        progressBar.style.width = isActive ? `${percent}%` : '0%';
+        
+        if (isPaused) {
+          progressBar.classList.remove('progress-bar-animated');
+        } else {
+          progressBar.classList.add('progress-bar-animated');
+        }
 
-      progressDetail.textContent = isRunning && data.current_file ? `Working on ${data.current_file}` : 'No conversion running.';
-      if (data.folders && data.folders.length) {
-        renderFolderResults(data.folders);
-      }
-      if (data.state === 'done') {
-        clearInterval(progressTimer);
-        summary.textContent = `${data.converted_count} image(s) converted, ${data.skipped_count} skipped`;
+        if (isStarting) {
+          progressDetail.textContent = 'Preparing conversion…';
+        } else {
+          progressDetail.textContent = isRunning && data.current_file ? `Working on ${data.current_file}` : 'No conversion running.';
+        }
+
+        if (data.folders && data.folders.length) {
+          renderFolderResults(data.folders);
+        }
+
+        if (data.state === 'done') {
+          clearInterval(progressTimer);
+          summary.textContent = `${data.converted_count} image(s) converted, ${data.skipped_count} skipped`;
+        }
+      } catch (error) {
+        progressDetail.textContent = `Unable to refresh progress: ${error.message}`;
       }
     }
 
@@ -711,9 +730,11 @@
         return;
       }
       summary.textContent = 'Conversion started.';
-      updateSessionSummary({ total: 0, processed: 0, converted_count: 0, skipped_count: 0, saved_bytes: 0, state: 'running', root });
+      updateSessionSummary({ total: 0, processed: 0, converted_count: 0, skipped_count: 0, saved_bytes: 0, state: 'starting', root });
+      folderSummary.innerHTML = '<div class="text-muted small">Preparing conversion…</div>';
       clearInterval(progressTimer);
       progressTimer = setInterval(updateProgress, 400);
+      updateProgress();
     });
 
     pauseBtn.addEventListener('click', async () => {

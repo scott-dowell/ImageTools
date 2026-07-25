@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #28: Fix scan results table scrolling so overflow is clipped to the panel and scrollbars appear inside the table area.
 - Issue #27: Add run.ps1 script for streamlined development startup.
 - Issue #26: Fix conversion startup polling race so the UI does not stay on stale previous scan details.
 - Issue #59: Show current file details in the UI immediately when conversion starts for each file.
