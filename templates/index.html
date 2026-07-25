@@ -355,6 +355,10 @@
     const summaryCurrentFile = document.getElementById('summaryCurrentFile');
     const summaryEta = document.getElementById('summaryEta');
     let progressTimer = null;
+    let lastConvertingFolder = '';
+    let lastResultsScrollTop = 0;
+    let resultsManualScrollLocked = false;
+    let isApplyingResultsScroll = false;
 
     function getDisplayFolderPath(folderPath, rootPath) {
       if (!folderPath || !rootPath) return folderPath || '';
@@ -396,6 +400,15 @@
     }
 
     function renderFolderResults(items) {
+      const previousScroller = folderSummary.querySelector('.results-scroll');
+      const previousScrollTop = previousScroller ? previousScroller.scrollTop : lastResultsScrollTop;
+      const activeFolderItem = items.find((item) => item.status === 'converting');
+      const activeFolder = activeFolderItem ? activeFolderItem.folder : '';
+      const activeFolderChanged = Boolean(activeFolder && activeFolder !== lastConvertingFolder);
+      if (activeFolderChanged) {
+        resultsManualScrollLocked = false;
+      }
+
       const root = document.getElementById('rootFolder').value;
       folderSummary.innerHTML = `
         <div class="results-wrapper">
@@ -421,7 +434,7 @@
               </thead>
               <tbody class="small">
                 ${items.map((item) => `
-                  <tr>
+                  <tr data-status="${item.status || 'pending'}">
                     <td class="folder-path text-truncate" title="${item.folder}">${getDisplayFolderPath(item.folder, root)}</td>
                     <td class="text-end fw-semibold pe-3">${item.count}</td>
                     <td style="width: 120px;">
@@ -462,6 +475,40 @@
           </div>
         </div>
       `;
+
+      const scroller = folderSummary.querySelector('.results-scroll');
+      if (scroller) {
+        isApplyingResultsScroll = true;
+        if (activeFolder && activeFolderChanged && !resultsManualScrollLocked) {
+          const activeRow = scroller.querySelector('tbody tr[data-status="converting"]');
+          if (activeRow) {
+            activeRow.scrollIntoView({ block: 'nearest' });
+          }
+        } else {
+          const maxScrollTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+          scroller.scrollTop = Math.min(previousScrollTop, maxScrollTop);
+        }
+        lastResultsScrollTop = scroller.scrollTop;
+        isApplyingResultsScroll = false;
+
+        scroller.addEventListener('wheel', () => {
+          resultsManualScrollLocked = true;
+        }, { passive: true });
+
+        scroller.addEventListener('touchmove', () => {
+          resultsManualScrollLocked = true;
+        }, { passive: true });
+
+        scroller.addEventListener('scroll', () => {
+          if (isApplyingResultsScroll) {
+            return;
+          }
+          lastResultsScrollTop = scroller.scrollTop;
+          resultsManualScrollLocked = true;
+        }, { passive: true });
+      }
+
+      lastConvertingFolder = activeFolder || '';
     }
 
     async function loadBrowseFolders(path = '') {

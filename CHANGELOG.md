@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #30: Preserve scan results table scroll position during live updates while auto-following the currently converting folder only on folder changes.
 - Issue #29: Fix bottom-edge clipping on the scan results card by removing vertical gutter pressure in the main dashboard row.
 - Issue #28: Fix scan results table scrolling so overflow is clipped to the panel and scrollbars appear inside the table area.
 - Issue #27: Add run.ps1 script for streamlined development startup.
