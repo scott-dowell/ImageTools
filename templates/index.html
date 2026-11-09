@@ -361,7 +361,20 @@
     const summaryEta = document.getElementById('summaryEta');
     let progressTimer = null;
     let currentRunState = 'idle';
+    let hasOpenRowActionMenu = false;
     let autoFollowActiveRow = true;
+
+    document.addEventListener('shown.bs.dropdown', (event) => {
+      const toggle = event.target.closest('[data-bs-toggle="dropdown"]');
+      if (!toggle) return;
+      hasOpenRowActionMenu = true;
+    });
+
+    document.addEventListener('hidden.bs.dropdown', (event) => {
+      const toggle = event.target.closest('[data-bs-toggle="dropdown"]');
+      if (!toggle) return;
+      hasOpenRowActionMenu = false;
+    });
     let activeFolderPath = '';
     let resultsScrollTop = 0;
     let suppressResultsScrollHandler = false;
@@ -765,7 +778,7 @@
       }
 
       progressDetail.textContent = isRunning && data.current_file ? `Working on ${data.current_file}` : 'No conversion running.';
-      if (data.folders && data.folders.length) {
+      if (data.folders && data.folders.length && !hasOpenRowActionMenu) {
         renderFolderResults(data.folders);
       }
       if (data.state === 'done') {
