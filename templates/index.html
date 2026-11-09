@@ -40,6 +40,9 @@
       min-height: 0;
     }
     .results-scroll table { margin-bottom: 0; }
+    .folder-table tbody tr.row-active > td {
+      background-color: rgba(13, 110, 253, 0.08);
+    }
     
     /* Ensure dropdowns aren't clipped by table rows or scroll containers */
     .folder-table .dropdown { position: static; }
@@ -168,9 +171,6 @@
         <div class="card shadow-sm">
           <div class="card-header bg-white d-flex align-items-center justify-content-between">
             <span><i class="bi bi-play-circle me-2 text-primary"></i>Controls</span>
-            <div class="text-muted small">
-              Wait for current file to finish.
-            </div>
           </div>
           <div class="card-body">
             <div class="d-grid gap-2">
@@ -233,7 +233,12 @@
             <div class="d-flex align-items-center">
               <i class="bi bi-card-checklist me-2 text-primary"></i>Scan result
             </div>
-            <div id="summary" class="text-secondary small">No scan performed yet.</div>
+            <div class="d-flex align-items-center gap-2">
+              <button id="jumpToActiveBtn" type="button" class="btn btn-outline-primary btn-sm py-0 px-2 d-none">
+                <i class="bi bi-crosshair me-1"></i>Jump to Active
+              </button>
+              <div id="summary" class="text-secondary small">No scan performed yet.</div>
+            </div>
           </div>
           <div class="card-body d-flex flex-column" style="min-height: 0;">
             <div id="folderSummary" class="flex-grow-1 d-flex flex-column" style="min-height: 0;"></div>
@@ -332,6 +337,7 @@
     const pauseBtn = document.getElementById('pauseBtn');
     const stopBtn = document.getElementById('stopBtn');
     const confirmStopBtn = document.getElementById('confirmStopBtn');
+    const jumpToActiveBtn = document.getElementById('jumpToActiveBtn');
     let _selectedPath = null;
     let _browseModalInstance = null;
     let _stopConfirmModalInstance = null;
@@ -354,6 +360,53 @@
     const summaryCurrentFile = document.getElementById('summaryCurrentFile');
     const summaryEta = document.getElementById('summaryEta');
     let progressTimer = null;
+    let currentRunState = 'idle';
+    let autoFollowActiveRow = true;
+    let activeFolderPath = '';
+    let resultsScrollTop = 0;
+    let suppressResultsScrollHandler = false;
+
+    function normalizePath(path) {
+      return String(path || '').replace(/\\/g, '/');
+    }
+
+    function findFolderRowByPath(container, folderPath) {
+      if (!container || !folderPath) return null;
+      const normalizedTarget = normalizePath(folderPath);
+      return [...container.querySelectorAll('tbody tr')].find((row) => normalizePath(row.dataset.folder || '') === normalizedTarget) || null;
+    }
+
+    function setResultsScrollPosition(scrollContainer, value) {
+      if (!scrollContainer) return;
+      suppressResultsScrollHandler = true;
+      scrollContainer.scrollTop = Math.max(0, value);
+      suppressResultsScrollHandler = false;
+      resultsScrollTop = scrollContainer.scrollTop;
+    }
+
+    function scrollToActiveRow(behavior = 'auto') {
+      if (!activeFolderPath) return;
+      const scrollContainer = folderSummary.querySelector('.results-scroll');
+      if (!scrollContainer) return;
+      const activeRow = findFolderRowByPath(scrollContainer, activeFolderPath);
+      if (!activeRow) return;
+      suppressResultsScrollHandler = true;
+      activeRow.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior });
+      suppressResultsScrollHandler = false;
+      resultsScrollTop = scrollContainer.scrollTop;
+    }
+
+    function updateJumpToActiveButton() {
+      if (!jumpToActiveBtn) return;
+      const shouldShow = currentRunState === 'running' && Boolean(activeFolderPath) && !autoFollowActiveRow;
+      jumpToActiveBtn.classList.toggle('d-none', !shouldShow);
+    }
+
+    function disableAutoFollowFromUserInput() {
+      if (currentRunState !== 'running' || !autoFollowActiveRow) return;
+      autoFollowActiveRow = false;
+      updateJumpToActiveButton();
+    }
 
     function getDisplayFolderPath(folderPath, rootPath) {
       if (!folderPath || !rootPath) return folderPath || '';
@@ -396,6 +449,12 @@
 
     function renderFolderResults(items) {
       const root = document.getElementById('rootFolder').value;
+      const existingScroll = folderSummary.querySelector('.results-scroll');
+      if (existingScroll) {
+        resultsScrollTop = existingScroll.scrollTop;
+      }
+      const activeItem = items.find((item) => item.status === 'converting');
+      activeFolderPath = activeItem ? activeItem.folder : '';
       folderSummary.innerHTML = `
         <div class="results-wrapper">
           <div class="bg-light px-3 py-2 border-bottom small fw-semibold text-secondary d-flex align-items-center flex-shrink-0">
@@ -420,7 +479,7 @@
               </thead>
               <tbody class="small">
                 ${items.map((item) => `
-                  <tr>
+                  <tr class="${item.status === 'converting' ? 'row-active' : ''}" data-folder="${item.folder}">
                     <td class="folder-path text-truncate" title="${item.folder}">${getDisplayFolderPath(item.folder, root)}</td>
                     <td class="text-end fw-semibold pe-3">${item.count}</td>
                     <td style="width: 120px;">
@@ -461,6 +520,26 @@
           </div>
         </div>
       `;
+      const scrollContainer = folderSummary.querySelector('.results-scroll');
+      if (!scrollContainer) {
+        updateJumpToActiveButton();
+        return;
+      }
+
+      scrollContainer.addEventListener('scroll', () => {
+        if (suppressResultsScrollHandler) return;
+        resultsScrollTop = scrollContainer.scrollTop;
+        disableAutoFollowFromUserInput();
+      }, { passive: true });
+      scrollContainer.addEventListener('wheel', disableAutoFollowFromUserInput, { passive: true });
+      scrollContainer.addEventListener('touchmove', disableAutoFollowFromUserInput, { passive: true });
+
+      if (currentRunState === 'running' && autoFollowActiveRow && activeFolderPath) {
+        scrollToActiveRow('auto');
+      } else {
+        setResultsScrollPosition(scrollContainer, resultsScrollTop);
+      }
+      updateJumpToActiveButton();
     }
 
     async function loadBrowseFolders(path = '') {
@@ -644,6 +723,7 @@
       const response = await fetch('/api/progress');
       const data = await response.json();
       const isRunning = data.state === 'running';
+      currentRunState = data.state || 'idle';
       const isPaused = data.paused === true;
 
       // Update control buttons
@@ -691,7 +771,9 @@
       if (data.state === 'done') {
         clearInterval(progressTimer);
         summary.textContent = `${data.converted_count} image(s) converted, ${data.skipped_count} skipped`;
+        autoFollowActiveRow = true;
       }
+      updateJumpToActiveButton();
     }
 
     convertBtn.addEventListener('click', async () => {
@@ -710,10 +792,19 @@
         browseBtn.disabled = false;
         return;
       }
+      autoFollowActiveRow = true;
+      activeFolderPath = '';
+      resultsScrollTop = 0;
       summary.textContent = 'Conversion started.';
       updateSessionSummary({ total: 0, processed: 0, converted_count: 0, skipped_count: 0, saved_bytes: 0, state: 'running', root });
       clearInterval(progressTimer);
       progressTimer = setInterval(updateProgress, 400);
+    });
+
+    jumpToActiveBtn.addEventListener('click', () => {
+      autoFollowActiveRow = true;
+      scrollToActiveRow('smooth');
+      updateJumpToActiveButton();
     });
 
     pauseBtn.addEventListener('click', async () => {
