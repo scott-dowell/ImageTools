@@ -14,6 +14,14 @@ def _normalize_folder_path(path: str | os.PathLike[str]) -> str:
     return str(Path(path)).replace("\\", "/")
 
 
+def _is_convertible_image(path: Path) -> bool:
+    return (
+        path.is_file()
+        and path.suffix.lower() in SUPPORTED_EXTENSIONS
+        and not path.name.lower().startswith("converted")
+    )
+
+
 def discover_image_files(root: str | os.PathLike[str]) -> List[Path]:
     root_path = Path(root)
     if not root_path.exists():
@@ -21,7 +29,7 @@ def discover_image_files(root: str | os.PathLike[str]) -> List[Path]:
 
     discovered: List[Path] = []
     for path in root_path.rglob("*"):
-        if path.is_file() and path.suffix.lower() in SUPPORTED_EXTENSIONS:
+        if _is_convertible_image(path):
             discovered.append(path)
 
     return sorted(discovered)
@@ -34,7 +42,7 @@ def summarize_image_counts_by_folder(root: str | os.PathLike[str]) -> List[Dict[
 
     folders: Dict[Path, int] = {}
     for path in root_path.rglob("*"):
-        if path.is_file() and path.suffix.lower() in SUPPORTED_EXTENSIONS:
+        if _is_convertible_image(path):
             folders[path.parent] = folders.get(path.parent, 0) + 1
 
     summaries = [{"folder": str(folder), "count": count} for folder, count in sorted(folders.items(), key=lambda item: str(item[0]))]
@@ -46,7 +54,7 @@ def summarize_folder_status(root: str | os.PathLike[str]) -> List[Dict[str, Any]
     summaries = summarize_image_counts_by_folder(root_path)
     folder_sizes: Dict[Path, int] = {}
     for path in root_path.rglob("*"):
-        if path.is_file() and path.suffix.lower() in SUPPORTED_EXTENSIONS:
+        if _is_convertible_image(path):
             folder_sizes[path.parent] = folder_sizes.get(path.parent, 0) + path.stat().st_size
 
     return [{
@@ -164,9 +172,6 @@ def convert_tree(
     conversion_results: List[Dict[str, Any]] = []
 
     for index, source_path in enumerate(discovered_files, start=1):
-        if source_path.name.lower().startswith("converted") or source_path.suffix.lower() == ".webp":
-            continue
-
         if on_progress is not None:
             sig = None
             try:

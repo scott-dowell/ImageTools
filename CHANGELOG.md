@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #31: Exclude folders with zero convertible images from scan results.
 - Issue #59: Show current file details in the UI immediately when conversion starts for each file.
 - Issue #58: Disable the "Convert" and "Scan" buttons in the UI while a conversion is already in progress.
 - Issue #57: Fix clipping of folder action dropdowns by setting their boundary to the viewport.

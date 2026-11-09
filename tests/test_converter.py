@@ -184,6 +184,22 @@ def test_summarize_image_counts_by_folder_returns_folder_rows_for_table(tmp_path
     assert summary[0]["count"] == 1
 
 
+def test_summarize_image_counts_by_folder_excludes_non_convertible_files(tmp_path: Path) -> None:
+    source_dir = tmp_path / "images"
+    only_converted_dir = source_dir / "only-converted"
+    convertible_dir = source_dir / "convertible"
+    only_converted_dir.mkdir(parents=True)
+    convertible_dir.mkdir(parents=True)
+
+    Image.new("RGB", (64, 64), color=(255, 0, 0)).save(only_converted_dir / "converted-one.jpg")
+    Image.new("RGB", (64, 64), color=(0, 255, 0)).save(only_converted_dir / "converted-two.png")
+    Image.new("RGB", (64, 64), color=(0, 0, 255)).save(convertible_dir / "photo.jpg")
+
+    summary = summarize_image_counts_by_folder(source_dir)
+
+    assert summary == [{"folder": str(convertible_dir), "count": 1}]
+
+
 def test_summarize_folder_status_defaults_to_pending(tmp_path: Path) -> None:
     source_dir = tmp_path / "images"
     (source_dir / "nested").mkdir(parents=True)
