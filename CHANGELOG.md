@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #36: Remove the redundant "Wait for current file to finish." note from the Controls card header.
+- Issue #35: Keep row action menus usable during active conversion updates by suppressing table refreshes while a menu is open.
+- Issue #34: Add manual scroll override and a "Jump to Active" control for scan results during conversion.
+- Issue #31: Exclude folders with zero convertible images from scan results.
 - Issue #30: Preserve scan results table scroll position during live updates while auto-following the currently converting folder only on folder changes.
 - Issue #29: Fix bottom-edge clipping on the scan results card by removing vertical gutter pressure in the main dashboard row.
 - Issue #28: Fix scan results table scrolling so overflow is clipped to the panel and scrollbars appear inside the table area.
