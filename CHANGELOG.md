@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #37: Initialize progress polling on page load so active conversions update without requiring a new Scan or Convert click.
 - Issue #36: Remove the redundant "Wait for current file to finish." note from the Controls card header.
 - Issue #35: Keep row action menus usable during active conversion updates by suppressing table refreshes while a menu is open.
 - Issue #34: Add manual scroll override and a "Jump to Active" control for scan results during conversion.

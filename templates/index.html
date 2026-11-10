@@ -468,6 +468,11 @@
       summaryEta.textContent = data.state === 'running' && data.eta_seconds ? formatEta(data.eta_seconds) : '—';
     }
 
+    function startProgressPolling(intervalMs = 400) {
+      clearInterval(progressTimer);
+      progressTimer = setInterval(updateProgress, intervalMs);
+    }
+
     function renderFolderResults(items) {
       const root = document.getElementById('rootFolder').value;
       const previousScroller = folderSummary.querySelector('.results-scroll');
@@ -766,8 +771,7 @@
         return;
       }
       if (data.status === 'started') {
-        clearInterval(progressTimer);
-        progressTimer = setInterval(updateProgress, 250);
+        startProgressPolling(250);
         summary.textContent = 'Scanning folder structure…';
         return;
       }
@@ -855,7 +859,6 @@
         }
 
         if (data.state === 'done') {
-          clearInterval(progressTimer);
           if (data.phase === 'complete' && data.result && data.result.count !== undefined) {
             summary.textContent = `${data.result.count} image(s) found under ${data.result.root}`;
           } else if (data.converted_count !== undefined) {
@@ -891,8 +894,7 @@
       summary.textContent = 'Conversion started.';
       updateSessionSummary({ total: 0, processed: 0, converted_count: 0, skipped_count: 0, saved_bytes: 0, state: 'starting', root });
       folderSummary.innerHTML = '<div class="text-muted small">Preparing conversion…</div>';
-      clearInterval(progressTimer);
-      progressTimer = setInterval(updateProgress, 400);
+      startProgressPolling(400);
       updateProgress();
     });
 
@@ -921,6 +923,9 @@
       await callApi('/api/stop', {});
       updateProgress();
     });
+
+    startProgressPolling(400);
+    updateProgress();
   </script>
 </body>
 </html>
