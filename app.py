@@ -8,7 +8,14 @@ from pathlib import Path, PurePath
 
 from flask import Flask, jsonify, make_response, render_template, request
 
-from converter import build_folder_progress_summary, convert_tree, discover_image_files, summarize_folder_status, update_folder_statuses
+from converter import (
+    build_folder_progress_summary,
+    cleanup_legacy_converted_folders,
+    convert_tree,
+    discover_image_files,
+    summarize_folder_status,
+    update_folder_statuses,
+)
 
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
@@ -297,6 +304,29 @@ def scan_folder():
         "count": len(files),
         "files": [str(path) for path in files[:200]],
         "folders": folder_summary,
+    })
+
+
+@app.route("/api/cleanup", methods=["POST"])
+def cleanup_legacy_folders():
+    payload = request.get_json(silent=True) or {}
+    root = payload.get("root") or ""
+    if not root:
+        return jsonify({"error": "No root folder specified"}), 400
+
+    with _run_lock:
+        if _run_state["state"] == "running":
+            if _current_thread and _current_thread.is_alive():
+                return jsonify({"error": "A conversion is already running"}), 409
+            _run_state["state"] = "idle"
+
+    cleanup_result = cleanup_legacy_converted_folders(root)
+    return jsonify({
+        "status": "completed",
+        "root": str(Path(root)),
+        "moved": cleanup_result["moved"],
+        "removed_folders": cleanup_result["removed_folders"],
+        "skipped": cleanup_result["skipped"],
     })
 
 

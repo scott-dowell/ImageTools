@@ -7,6 +7,7 @@ import app as app_module
 from app import _update_folder_statuses_for_progress, select_folder_path, write_uploaded_folder
 from converter import (
     build_folder_progress_summary,
+    cleanup_legacy_converted_folders,
     convert_tree,
     discover_image_files,
     summarize_folder_status,
@@ -154,6 +155,40 @@ def test_api_pause_and_stop_routes() -> None:
     assert resp.status_code == 200
     assert resp.get_json()["stop_requested"] is True
     assert app_module._run_state["stop_requested"] is True
+
+
+def test_cleanup_legacy_converted_folders_moves_files_and_removes_folder(tmp_path: Path) -> None:
+    source_dir = tmp_path / "images" / "set-a"
+    legacy_dir = source_dir / "Converted.webp"
+    source_dir.mkdir(parents=True)
+    legacy_dir.mkdir()
+
+    legacy_file = legacy_dir / "sample.webp"
+    legacy_file.write_bytes(b"webp")
+
+    result = cleanup_legacy_converted_folders(tmp_path / "images")
+
+    assert result == {"moved": 1, "removed_folders": 1, "skipped": 0}
+    assert (source_dir / "sample.webp").exists()
+    assert not legacy_dir.exists()
+
+
+def test_api_cleanup_route_reports_results(tmp_path: Path) -> None:
+    source_dir = tmp_path / "images" / "set-b"
+    legacy_dir = source_dir / "Converted.webp"
+    source_dir.mkdir(parents=True)
+    legacy_dir.mkdir()
+    (legacy_dir / "photo.webp").write_bytes(b"webp")
+
+    client = app_module.app.test_client()
+    response = client.post("/api/cleanup", json={"root": str(tmp_path / "images")})
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["status"] == "completed"
+    assert payload["moved"] == 1
+    assert payload["removed_folders"] == 1
+    assert payload["skipped"] == 0
 
 
 def test_summarize_image_counts_by_folder(tmp_path: Path) -> None:

@@ -153,6 +153,37 @@ def update_folder_statuses(statuses: List[Dict[str, Any]], folder: str, status: 
     return updated
 
 
+def cleanup_legacy_converted_folders(root: str | os.PathLike[str]) -> Dict[str, int]:
+    root_path = Path(root)
+    moved = 0
+    removed_folders = 0
+    skipped = 0
+
+    if not root_path.exists():
+        return {"moved": 0, "removed_folders": 0, "skipped": 0}
+
+    for converted_dir in sorted(root_path.rglob("Converted.webp"), key=lambda value: str(value)):
+        if not converted_dir.is_dir():
+            continue
+        parent_dir = converted_dir.parent
+        for child in sorted(converted_dir.iterdir(), key=lambda value: value.name.lower()):
+            if not child.is_file():
+                continue
+            target_path = parent_dir / child.name
+            if target_path.exists() and target_path != child:
+                skipped += 1
+                continue
+            child.replace(target_path)
+            moved += 1
+        try:
+            converted_dir.rmdir()
+        except OSError:
+            pass
+        removed_folders += 1
+
+    return {"moved": moved, "removed_folders": removed_folders, "skipped": skipped}
+
+
 def convert_tree(
     root: str | os.PathLike[str],
     quality: int = 85,
