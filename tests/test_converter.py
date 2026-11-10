@@ -173,6 +173,15 @@ def test_cleanup_legacy_converted_folders_moves_files_and_removes_folder(tmp_pat
     assert not legacy_dir.exists()
 
 
+def test_index_page_includes_current_app_version() -> None:
+    client = app_module.app.test_client()
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert f"v{app_module.APP_VERSION}" in response.get_data(as_text=True)
+
+
 def test_api_cleanup_route_reports_results(tmp_path: Path) -> None:
     source_dir = tmp_path / "images" / "set-b"
     legacy_dir = source_dir / "Converted.webp"
@@ -189,6 +198,23 @@ def test_api_cleanup_route_reports_results(tmp_path: Path) -> None:
     assert payload["moved"] == 1
     assert payload["removed_folders"] == 1
     assert payload["skipped"] == 0
+
+
+def test_api_cleanup_route_uses_last_run_root_when_root_is_missing(tmp_path: Path) -> None:
+    source_dir = tmp_path / "images" / "set-c"
+    legacy_dir = source_dir / "Converted.webp"
+    source_dir.mkdir(parents=True)
+    legacy_dir.mkdir()
+    (legacy_dir / "photo.webp").write_bytes(b"webp")
+    app_module._run_state["root"] = str(tmp_path / "images")
+
+    client = app_module.app.test_client()
+    response = client.post("/api/cleanup", json={})
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["status"] == "completed"
+    assert payload["moved"] == 1
 
 
 def test_summarize_image_counts_by_folder(tmp_path: Path) -> None:

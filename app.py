@@ -17,8 +17,11 @@ from converter import (
     update_folder_statuses,
 )
 
+APP_VERSION = "1.0.1"
+
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
+app.config["APP_VERSION"] = APP_VERSION
 
 _SYSTEM_FOLDERS = {
     "system volume information", "$recycle.bin", "$windows.~bt", "$windows.~ws",
@@ -282,7 +285,7 @@ def _run_conversion(root: str, quality: int) -> None:
 
 @app.route("/")
 def index() -> str:
-    response = make_response(render_template("index.html"))
+    response = make_response(render_template("index.html", app_version=APP_VERSION))
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
@@ -310,7 +313,7 @@ def scan_folder():
 @app.route("/api/cleanup", methods=["POST"])
 def cleanup_legacy_folders():
     payload = request.get_json(silent=True) or {}
-    root = payload.get("root") or ""
+    root = payload.get("root") or _run_state.get("root") or ""
     if not root:
         return jsonify({"error": "No root folder specified"}), 400
 

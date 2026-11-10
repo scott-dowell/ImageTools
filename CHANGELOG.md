@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #38: Fix stale app version display, wire the cleanup action, and clarify the root-folder cleanup workflow.
 - Issue #32: Add `/api/cleanup` so "Cleanup legacy folders" can flatten `Converted.webp` contents back into source folders without a prior scan.
 - Issue #37: Initialize progress polling on page load so active conversions update without requiring a new Scan or Convert click.
 - Issue #36: Remove the redundant "Wait for current file to finish." note from the Controls card header.
