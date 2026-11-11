@@ -21,8 +21,46 @@
       text-overflow: ellipsis; 
       font-size: 0.8rem;
     }
+    .folder-table th {
+      position: relative;
+      user-select: none;
+    }
+    .sortable-header {
+      cursor: pointer;
+      padding-right: 1.25rem;
+    }
+    .sort-indicator {
+      font-size: 0.7rem;
+      opacity: 0.6;
+      margin-left: 0.25rem;
+    }
+    .resize-handle {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 8px;
+      height: 100%;
+      cursor: col-resize;
+      z-index: 3;
+    }
+    .resize-handle::after {
+      content: '';
+      position: absolute;
+      top: 20%;
+      bottom: 20%;
+      right: 2px;
+      width: 1px;
+      background: #c8ced4;
+    }
+    body.col-resizing {
+      cursor: col-resize !important;
+    }
+    body.col-resizing * {
+      user-select: none !important;
+      cursor: col-resize !important;
+    }
     .folder-table td.folder-path { 
-      width: 35%;
+      max-width: 0;
     }
     .results-scroll {
       flex: 1;
@@ -379,6 +417,20 @@
     let lastResultsScrollTop = 0;
     let resultsManualScrollLocked = false;
     let isApplyingResultsScroll = false;
+    let tableSort = { key: null, direction: null };
+    const columnWidths = {
+      folder: 260,
+      images: 85,
+      progress: 130,
+      done: 70,
+      skip: 70,
+      before: 90,
+      after: 90,
+      saved: 90,
+      percent: 65,
+      status: 100,
+      actions: 44,
+    };
 
     document.addEventListener('shown.bs.dropdown', (event) => {
       const toggle = event.target.closest('[data-bs-toggle="dropdown"]');
@@ -473,6 +525,97 @@
       summaryEta.textContent = data.state === 'running' && data.eta_seconds ? formatEta(data.eta_seconds) : '—';
     }
 
+    function getSortIndicator(columnKey) {
+      if (tableSort.key !== columnKey || !tableSort.direction) return '↕';
+      return tableSort.direction === 'asc' ? '▲' : '▼';
+    }
+
+    function cycleSort(columnKey) {
+      if (tableSort.key !== columnKey) {
+        tableSort = { key: columnKey, direction: 'asc' };
+        return;
+      }
+      if (tableSort.direction === 'asc') {
+        tableSort = { key: columnKey, direction: 'desc' };
+        return;
+      }
+      if (tableSort.direction === 'desc') {
+        tableSort = { key: null, direction: null };
+        return;
+      }
+      tableSort = { key: columnKey, direction: 'asc' };
+    }
+
+    function getSortValue(item, key) {
+      switch (key) {
+        case 'folder':
+          return String(item.folder || '').toLowerCase();
+        case 'images':
+          return Number(item.count || 0);
+        case 'progress':
+          return Number(item.progress || 0);
+        case 'done':
+          return Number(item.converted || 0);
+        case 'skip':
+          return Number(item.skipped || 0);
+        case 'before':
+          return Number(item.size_before_bytes || 0);
+        case 'after':
+          return Number(item.size_after_bytes || 0);
+        case 'saved':
+          return Number(item.saved_bytes || 0);
+        case 'percent':
+          return Number(item.savings_percent || 0);
+        case 'status':
+          return String(item.status || '').toLowerCase();
+        default:
+          return '';
+      }
+    }
+
+    function applyFolderSort(items) {
+      if (!tableSort.key || !tableSort.direction) return items;
+      const direction = tableSort.direction === 'asc' ? 1 : -1;
+      return [...items].sort((a, b) => {
+        const av = getSortValue(a, tableSort.key);
+        const bv = getSortValue(b, tableSort.key);
+        if (typeof av === 'number' && typeof bv === 'number') {
+          if (av === bv) return (a.__index - b.__index) * direction;
+          return av > bv ? direction : -direction;
+        }
+        const cmp = String(av).localeCompare(String(bv));
+        if (cmp === 0) return (a.__index - b.__index) * direction;
+        return cmp * direction;
+      });
+    }
+
+    function startColumnResize(event, columnKey) {
+      event.preventDefault();
+      event.stopPropagation();
+      const minWidth = 44;
+      const startX = event.clientX;
+      const startWidth = Number(columnWidths[columnKey] || 80);
+      document.body.classList.add('col-resizing');
+
+      const onMouseMove = (moveEvent) => {
+        const nextWidth = Math.max(minWidth, startWidth + (moveEvent.clientX - startX));
+        columnWidths[columnKey] = nextWidth;
+        const col = folderSummary.querySelector(`col[data-col="${columnKey}"]`);
+        if (col) {
+          col.style.width = `${nextWidth}px`;
+        }
+      };
+
+      const onMouseUp = () => {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        document.body.classList.remove('col-resizing');
+      };
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    }
+
     function startProgressPolling(intervalMs = 400) {
       clearInterval(progressTimer);
       progressTimer = setInterval(updateProgress, intervalMs);
@@ -480,9 +623,11 @@
 
     function renderFolderResults(items) {
       const root = document.getElementById('rootFolder').value;
+      const indexedItems = items.map((item, index) => ({ ...item, __index: index }));
+      const sortedItems = applyFolderSort(indexedItems);
       const previousScroller = folderSummary.querySelector('.results-scroll');
       const previousScrollTop = previousScroller ? previousScroller.scrollTop : lastResultsScrollTop;
-      const activeFolderItem = items.find((item) => item.status === 'converting');
+      const activeFolderItem = sortedItems.find((item) => item.status === 'converting');
       const activeFolder = activeFolderItem ? activeFolderItem.folder : '';
       const activeFolderChanged = Boolean(activeFolder && activeFolder !== lastConvertingFolder);
       if (activeFolderChanged) {
@@ -501,23 +646,36 @@
           </div>
           <div class="table-responsive results-scroll">
             <table class="table table-sm table-hover align-middle mb-0 folder-table">
+              <colgroup>
+                <col data-col="folder" style="width: ${columnWidths.folder}px;">
+                <col data-col="images" style="width: ${columnWidths.images}px;">
+                <col data-col="progress" style="width: ${columnWidths.progress}px;">
+                <col data-col="done" style="width: ${columnWidths.done}px;">
+                <col data-col="skip" style="width: ${columnWidths.skip}px;">
+                <col data-col="before" style="width: ${columnWidths.before}px;">
+                <col data-col="after" style="width: ${columnWidths.after}px;">
+                <col data-col="saved" style="width: ${columnWidths.saved}px;">
+                <col data-col="percent" style="width: ${columnWidths.percent}px;">
+                <col data-col="status" style="width: ${columnWidths.status}px;">
+                <col data-col="actions" style="width: ${columnWidths.actions}px;">
+              </colgroup>
               <thead class="table-light sticky-top">
                 <tr>
-                  <th scope="col" class="small text-secondary fw-semibold">FOLDER</th>
-                  <th scope="col" class="text-end small text-secondary fw-semibold pe-3">IMAGES</th>
-                  <th scope="col" class="small text-secondary fw-semibold">PROGRESS</th>
-                  <th scope="col" class="small text-secondary fw-semibold">DONE</th>
-                  <th scope="col" class="small text-secondary fw-semibold">SKIP</th>
-                  <th scope="col" class="small text-secondary fw-semibold text-end">BEFORE</th>
-                  <th scope="col" class="small text-secondary fw-semibold text-end">AFTER</th>
-                  <th scope="col" class="small text-secondary fw-semibold text-end">SAVED</th>
-                  <th scope="col" class="small text-secondary fw-semibold text-end">%</th>
-                  <th scope="col" class="small text-secondary fw-semibold">STATUS</th>
+                  <th scope="col" class="small text-secondary fw-semibold sortable-header" data-sort-key="folder">FOLDER <span class="sort-indicator">${getSortIndicator('folder')}</span><span class="resize-handle" data-resize-key="folder"></span></th>
+                  <th scope="col" class="text-end small text-secondary fw-semibold pe-3 sortable-header" data-sort-key="images">IMAGES <span class="sort-indicator">${getSortIndicator('images')}</span><span class="resize-handle" data-resize-key="images"></span></th>
+                  <th scope="col" class="small text-secondary fw-semibold sortable-header" data-sort-key="progress">PROGRESS <span class="sort-indicator">${getSortIndicator('progress')}</span><span class="resize-handle" data-resize-key="progress"></span></th>
+                  <th scope="col" class="small text-secondary fw-semibold sortable-header" data-sort-key="done">DONE <span class="sort-indicator">${getSortIndicator('done')}</span><span class="resize-handle" data-resize-key="done"></span></th>
+                  <th scope="col" class="small text-secondary fw-semibold sortable-header" data-sort-key="skip">SKIP <span class="sort-indicator">${getSortIndicator('skip')}</span><span class="resize-handle" data-resize-key="skip"></span></th>
+                  <th scope="col" class="small text-secondary fw-semibold text-end sortable-header" data-sort-key="before">BEFORE <span class="sort-indicator">${getSortIndicator('before')}</span><span class="resize-handle" data-resize-key="before"></span></th>
+                  <th scope="col" class="small text-secondary fw-semibold text-end sortable-header" data-sort-key="after">AFTER <span class="sort-indicator">${getSortIndicator('after')}</span><span class="resize-handle" data-resize-key="after"></span></th>
+                  <th scope="col" class="small text-secondary fw-semibold text-end sortable-header" data-sort-key="saved">SAVED <span class="sort-indicator">${getSortIndicator('saved')}</span><span class="resize-handle" data-resize-key="saved"></span></th>
+                  <th scope="col" class="small text-secondary fw-semibold text-end sortable-header" data-sort-key="percent">% <span class="sort-indicator">${getSortIndicator('percent')}</span><span class="resize-handle" data-resize-key="percent"></span></th>
+                  <th scope="col" class="small text-secondary fw-semibold sortable-header" data-sort-key="status">STATUS <span class="sort-indicator">${getSortIndicator('status')}</span><span class="resize-handle" data-resize-key="status"></span></th>
                   <th scope="col" class="text-end pe-3"></th>
                 </tr>
               </thead>
               <tbody class="small">
-                ${items.map((item) => `
+                ${sortedItems.map((item) => `
                   <tr class="${item.status === 'converting' ? 'row-active' : ''}" data-folder="${item.folder}" data-status="${item.status || 'pending'}">
                     <td class="folder-path text-truncate" title="${item.folder}">${getDisplayFolderPath(item.folder, root)}</td>
                     <td class="text-end fw-semibold pe-3">${item.count}</td>
@@ -600,6 +758,24 @@
           disableAutoFollowFromUserInput();
         }
       }, { passive: true });
+
+      folderSummary.querySelectorAll('th[data-sort-key]').forEach((header) => {
+        header.addEventListener('click', (event) => {
+          if (event.target.closest('.resize-handle')) return;
+          const sortKey = header.dataset.sortKey;
+          if (!sortKey) return;
+          cycleSort(sortKey);
+          renderFolderResults(items);
+        });
+      });
+
+      folderSummary.querySelectorAll('.resize-handle[data-resize-key]').forEach((handle) => {
+        handle.addEventListener('mousedown', (event) => {
+          const resizeKey = handle.dataset.resizeKey;
+          if (!resizeKey) return;
+          startColumnResize(event, resizeKey);
+        });
+      });
 
       lastConvertingFolder = activeFolder || '';
       lastResultsScrollTop = scrollContainer.scrollTop;
