@@ -408,6 +408,8 @@
     const summaryEta = document.getElementById('summaryEta');
     let progressTimer = null;
     let currentRunState = 'idle';
+    let scanInProgress = false;
+    let cleanupInProgress = false;
     let hasOpenRowActionMenu = false;
     let autoFollowActiveRow = true;
     let activeFolderPath = '';
@@ -948,26 +950,45 @@
     browseSelectBtn.addEventListener('click', chooseFolder);
 
     scanBtn.addEventListener('click', async () => {
-      const root = document.getElementById('rootFolder').value;
-      const data = await callApi('/api/scan', { root });
-      if (data.error) {
-        summary.textContent = data.error;
+      if (scanInProgress) return;
+      const root = document.getElementById('rootFolder').value.trim();
+      if (!root) {
+        summary.textContent = 'No root folder specified';
         return;
       }
-      if (data.status === 'started') {
-        startProgressPolling(250);
-        summary.textContent = 'Scanning folder structure…';
-        return;
-      }
-      summary.textContent = data.error ? data.error : `${data.count} image(s) found under ${data.root}`;
-      if (data.error) {
-        updateSessionSummary({ total: 0, folders: [], processed: 0, converted_count: 0, skipped_count: 0, saved_bytes: 0, state: 'idle', root });
-        folderSummary.innerHTML = '';
-      } else if (data.folders && data.folders.length) {
-        updateSessionSummary({ total: data.count || 0, folders: data.folders, processed: 0, converted_count: 0, skipped_count: 0, saved_bytes: 0, state: 'idle', root: data.root });
-        renderFolderResults(data.folders);
-      } else {
-        folderSummary.innerHTML = '<div class="text-muted small">No image folders found.</div>';
+
+      scanInProgress = true;
+      scanBtn.disabled = true;
+      cleanupBtn.disabled = true;
+      convertBtn.disabled = true;
+      browseBtn.disabled = true;
+      scanBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Scanning…';
+      summary.textContent = `Scanning folder structure under ${root}…`;
+      progressLabel.textContent = 'Scanning…';
+
+      try {
+        const data = await callApi('/api/scan', { root });
+        if (data.error) {
+          summary.textContent = data.error;
+          updateSessionSummary({ total: 0, folders: [], processed: 0, converted_count: 0, skipped_count: 0, saved_bytes: 0, state: 'idle', root });
+          folderSummary.innerHTML = '';
+          return;
+        }
+
+        summary.textContent = `${data.count} image(s) found under ${data.root}`;
+        if (data.folders && data.folders.length) {
+          updateSessionSummary({ total: data.count || 0, folders: data.folders, processed: 0, converted_count: 0, skipped_count: 0, saved_bytes: 0, state: 'idle', root: data.root });
+          renderFolderResults(data.folders);
+        } else {
+          updateSessionSummary({ total: data.count || 0, folders: [], processed: 0, converted_count: 0, skipped_count: 0, saved_bytes: 0, state: 'idle', root: data.root });
+          folderSummary.innerHTML = '<div class="text-muted small">No image folders found.</div>';
+        }
+      } catch (error) {
+        summary.textContent = `Scan failed: ${error.message}`;
+      } finally {
+        scanInProgress = false;
+        scanBtn.innerHTML = '<i class="bi bi-search me-1"></i>Scan';
+        updateProgress();
       }
     });
 
@@ -983,10 +1004,11 @@
         const isPaused = data.paused === true;
 
         // Update control buttons
-        convertBtn.disabled = isActive;
-        scanBtn.disabled = isActive;
-        browseBtn.disabled = isActive;
-        cleanupBtn.disabled = isActive;
+        const lockScanActions = isActive || scanInProgress || cleanupInProgress;
+        convertBtn.disabled = lockScanActions;
+        scanBtn.disabled = lockScanActions;
+        browseBtn.disabled = lockScanActions;
+        cleanupBtn.disabled = lockScanActions;
 
         if (isRunning) {
           pauseBtn.disabled = !isScanning ? false : true;
@@ -1099,6 +1121,7 @@
         return;
       }
 
+      cleanupInProgress = true;
       cleanupBtn.disabled = true;
       cleanupStatus.textContent = 'Cleaning legacy Converted.webp folders…';
       cleanupStatus.className = 'small text-secondary mt-2';
@@ -1124,7 +1147,8 @@
         cleanupStatus.className = 'small text-danger mt-2';
         summary.textContent = `Cleanup failed for ${root}`;
       } finally {
-        cleanupBtn.disabled = false;
+        cleanupInProgress = false;
+        updateProgress();
       }
     });
 

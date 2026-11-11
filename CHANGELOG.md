@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #41: Show immediate scan-in-progress feedback and disable Scan/Cleanup actions while scanning.
 - Issue #40: Recycle corruption-failed source images immediately while keeping lock/permission failures as skipped.
 - Issue #39: Add sortable and resizable columns in the scan results table with header click sort cycling.
 - Issue #38: Fix stale app version display, wire the cleanup action, and clarify the root-folder cleanup workflow.
