@@ -500,6 +500,7 @@
       const processed = Number(data.processed || 0);
       const converted = Number(data.converted_count || 0);
       const skipped = Number(data.skipped_count || 0);
+      const recycled = Number(data.recycled_count || 0);
       const savedBytes = Number(data.saved_bytes || 0);
       const percentComplete = total > 0 ? Math.round((processed / total) * 100) : 0;
       const convertedPercent = total > 0 ? Math.round((converted / total) * 100) : 0;
@@ -517,7 +518,9 @@
       summaryConverted.textContent = converted;
       summaryConvertedSub.textContent = `${convertedPercent}% complete`;
       summarySkipped.textContent = skipped;
-      summarySkippedSub.textContent = skipped > 0 ? `${skipped} skipped` : 'No failures';
+      summarySkippedSub.textContent = skipped > 0
+        ? (recycled > 0 ? `${skipped} skipped (${recycled} recycled)` : `${skipped} skipped`)
+        : 'No failures';
       summarySaved.textContent = formatBytes(savedBytes);
       summarySavedSub.textContent = data.state === 'done' ? 'Session complete' : 'Live estimate';
       const currentFile = data.current_file ? String(data.current_file).split('\\').pop() : 'Waiting to start';
@@ -1043,7 +1046,10 @@
           if (data.phase === 'complete' && data.result && data.result.count !== undefined) {
             summary.textContent = `${data.result.count} image(s) found under ${data.result.root}`;
           } else if (data.converted_count !== undefined) {
-            summary.textContent = `${data.converted_count} image(s) converted, ${data.skipped_count} skipped`;
+            const recycledCount = Number(data.recycled_count || 0);
+            summary.textContent = recycledCount > 0
+              ? `${data.converted_count} image(s) converted, ${data.skipped_count} skipped (${recycledCount} recycled)`
+              : `${data.converted_count} image(s) converted, ${data.skipped_count} skipped`;
           }
           autoFollowActiveRow = true;
         }

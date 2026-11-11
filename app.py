@@ -17,7 +17,7 @@ from converter import (
     update_folder_statuses,
 )
 
-APP_VERSION = "1.0.1"
+APP_VERSION = "1.0.2"
 
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
@@ -57,6 +57,7 @@ _run_state = {
     "processed": 0,
     "converted_count": 0,
     "skipped_count": 0,
+    "recycled_count": 0,
     "current_file": "",
     "progress_percent": 0.0,
     "saved_bytes": 0,
@@ -210,9 +211,11 @@ def _on_progress(processed: int, total: int, current_path: str, conversion_resul
                                 folder_item["saved_bytes"] += int(conversion_result.get("saved_bytes", 0) or 0)
                                 _run_state["saved_bytes"] = int(_run_state.get("saved_bytes", 0) or 0) + int(conversion_result.get("saved_bytes", 0) or 0)
                                 _run_state["converted_count"] = int(_run_state.get("converted_count", 0) or 0) + 1
-                            elif conversion_result.get("status") in {"failed", "skipped"}:
+                            elif conversion_result.get("status") == "skipped" or str(conversion_result.get("status", "")).startswith("failed"):
                                 folder_item["skipped"] += 1
                                 _run_state["skipped_count"] = int(_run_state.get("skipped_count", 0) or 0) + 1
+                                if conversion_result.get("status") == "failed_recycled":
+                                    _run_state["recycled_count"] = int(_run_state.get("recycled_count", 0) or 0) + 1
                         else:
                             folder_item["converted"] += 1
                             _run_state["converted_count"] = int(_run_state.get("converted_count", 0) or 0) + 1
@@ -238,6 +241,7 @@ def _run_conversion(root: str, quality: int) -> None:
             processed=0,
             converted_count=0,
             skipped_count=0,
+            recycled_count=0,
             current_file="",
             progress_percent=0.0,
             saved_bytes=0,
@@ -266,6 +270,7 @@ def _run_conversion(root: str, quality: int) -> None:
             phase="complete",
             converted_count=result.get("converted_count", 0),
             skipped_count=result.get("skipped_count", 0),
+            recycled_count=result.get("recycled_count", 0),
             completed_at=datetime.utcnow(),
             result=result,
         )

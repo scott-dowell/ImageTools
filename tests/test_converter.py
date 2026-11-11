@@ -4,6 +4,7 @@ from pathlib import Path
 from PIL import Image
 
 import app as app_module
+import converter as converter_module
 from app import _update_folder_statuses_for_progress, select_folder_path, write_uploaded_folder
 from converter import (
     build_folder_progress_summary,
@@ -304,6 +305,49 @@ def test_webp_files_are_skipped(tmp_path: Path) -> None:
     assert (source_dir / "sample.webp").exists()
 
 
+def test_convert_tree_recycles_corrupt_files(tmp_path: Path, monkeypatch: object) -> None:
+    source_dir = tmp_path / "images"
+    source_dir.mkdir()
+    corrupt_path = source_dir / "broken.jpg"
+    corrupt_path.write_bytes(b"not-a-real-image")
+    recycled_paths = []
+
+    def fake_recycle(path: str) -> None:
+        recycled_paths.append(path)
+        Path(path).unlink(missing_ok=True)
+
+    monkeypatch.setattr(converter_module, "_send_to_trash", fake_recycle)
+
+    result = convert_tree(source_dir)
+
+    assert result["converted_count"] == 0
+    assert result["skipped_count"] == 1
+    assert result["recycled_count"] == 1
+    assert result["files"][0]["status"] == "failed_recycled"
+    assert recycled_paths == [str(corrupt_path)]
+    assert not corrupt_path.exists()
+
+
+def test_convert_tree_keeps_permission_failures(tmp_path: Path, monkeypatch: object) -> None:
+    source_dir = tmp_path / "images"
+    source_dir.mkdir()
+    source_path = source_dir / "sample.jpg"
+    Image.new("RGB", (32, 32), color=(255, 0, 0)).save(source_path)
+
+    def fake_open(path: Path):
+        raise PermissionError("access denied")
+
+    monkeypatch.setattr(converter_module.Image, "open", fake_open)
+
+    result = convert_tree(source_dir)
+
+    assert result["converted_count"] == 0
+    assert result["skipped_count"] == 1
+    assert result["recycled_count"] == 0
+    assert result["files"][0]["status"] == "failed_permission"
+    assert source_path.exists()
+
+
 def test_update_run_state_clears_progress_when_done() -> None:
     app_module._run_state.update({
         "state": "running",
@@ -578,6 +622,7 @@ def test_run_state_exposes_session_summary_fields() -> None:
         "processed": 2,
         "converted_count": 1,
         "skipped_count": 1,
+        "recycled_count": 1,
         "current_file": "C:/tmp/example.jpg",
         "progress_percent": 66.7,
         "saved_bytes": 0,
@@ -589,6 +634,7 @@ def test_run_state_exposes_session_summary_fields() -> None:
     assert session_state["processed"] == 2
     assert session_state["converted_count"] == 1
     assert session_state["skipped_count"] == 1
+    assert session_state["recycled_count"] == 1
     assert session_state["progress_percent"] == 66.7
     assert session_state["current_file"] == "C:/tmp/example.jpg"
     assert session_state["saved_bytes"] == 0

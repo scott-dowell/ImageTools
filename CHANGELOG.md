@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #40: Recycle corruption-failed source images immediately while keeping lock/permission failures as skipped.
 - Issue #39: Add sortable and resizable columns in the scan results table with header click sort cycling.
 - Issue #38: Fix stale app version display, wire the cleanup action, and clarify the root-folder cleanup workflow.
 - Issue #32: Add `/api/cleanup` so "Cleanup legacy folders" can flatten `Converted.webp` contents back into source folders without a prior scan.

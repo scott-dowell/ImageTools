@@ -5,9 +5,51 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List
 
 from PIL import Image, UnidentifiedImageError
+try:
+    from send2trash import send2trash as _send_to_trash
+except ImportError:
+    _send_to_trash = None
 
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tif", ".tiff"}
 ProgressCallback = Callable[[int, int, str, Dict[str, Any] | None], str | None]
+
+
+def _is_access_related_error(exc: Exception) -> bool:
+    if isinstance(exc, PermissionError):
+        return True
+    if isinstance(exc, OSError):
+        error_number = int(getattr(exc, "errno", 0) or 0)
+        windows_error_number = int(getattr(exc, "winerror", 0) or 0)
+        return error_number in {13} or windows_error_number in {5, 32, 33}
+    return False
+
+
+def _is_corruption_error(exc: Exception) -> bool:
+    if isinstance(exc, UnidentifiedImageError):
+        return True
+    if isinstance(exc, (OSError, ValueError)):
+        message = str(exc).lower()
+        return any(
+            fragment in message
+            for fragment in (
+                "cannot identify image file",
+                "broken data stream",
+                "image file is truncated",
+                "truncated",
+                "corrupt",
+            )
+        )
+    return False
+
+
+def _recycle_file(path: Path) -> bool:
+    if _send_to_trash is None:
+        return False
+    try:
+        _send_to_trash(str(path))
+        return True
+    except OSError:
+        return False
 
 
 def _normalize_folder_path(path: str | os.PathLike[str]) -> str:
@@ -113,7 +155,7 @@ def build_folder_progress_summary(
                 item["size_before_bytes_for_percent"] = int(item.get("size_before_bytes_for_percent", 0) or 0) + size_before_bytes
                 item["size_after_bytes"] += int(result.get("size_after_bytes", 0) or 0)
                 item["saved_bytes"] += int(result.get("saved_bytes", 0) or 0)
-            elif result.get("status") in {"failed", "skipped"}:
+            elif result.get("status") == "skipped" or str(result.get("status", "")).startswith("failed"):
                 item["skipped"] += 1
             item["progress"] = int(round((item.get("converted", 0) + item.get("skipped", 0)) / item["count"] * 100)) if item["count"] else 100
             percent_baseline = item.get("size_before_bytes_for_percent", 0) or item.get("size_before_bytes", 0)
@@ -196,6 +238,7 @@ def convert_tree(
         "root": str(root_path),
         "converted_count": 0,
         "skipped_count": 0,
+        "recycled_count": 0,
         "files": [],
     }
     processed_paths: List[Path] = []
@@ -222,10 +265,27 @@ def convert_tree(
                 else:
                     img = img.convert("RGB")
                 img.save(output_path, "WEBP", quality=quality)
-        except (UnidentifiedImageError, OSError, ValueError):
+        except (UnidentifiedImageError, OSError, ValueError) as exc:
             results["skipped_count"] += 1
-            results["files"].append({"path": str(source_path), "status": "failed"})
-            conversion_results.append({"path": str(source_path), "status": "failed"})
+            status = "failed"
+            if _is_access_related_error(exc):
+                status = "failed_permission"
+            elif _is_corruption_error(exc):
+                if _recycle_file(source_path):
+                    results["recycled_count"] += 1
+                    status = "failed_recycled"
+                else:
+                    status = "failed_corrupt"
+
+            error_message = str(exc)
+            file_result = {"path": str(source_path), "status": status}
+            progress_result = {"path": str(source_path), "status": status}
+            if error_message:
+                file_result["error"] = error_message
+                progress_result["error"] = error_message
+
+            results["files"].append(file_result)
+            conversion_results.append(progress_result)
         else:
             size_before_bytes = source_path.stat().st_size
             source_path.unlink(missing_ok=True)
