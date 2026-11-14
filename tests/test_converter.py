@@ -218,6 +218,43 @@ def test_api_cleanup_route_uses_last_run_root_when_root_is_missing(tmp_path: Pat
     assert payload["moved"] == 1
 
 
+def test_api_scan_refreshes_shared_run_state(tmp_path: Path) -> None:
+    first_root = tmp_path / "first"
+    second_root = tmp_path / "second"
+    (first_root / "old-folder").mkdir(parents=True)
+    (second_root / "new-folder").mkdir(parents=True)
+    Image.new("RGB", (32, 32), color=(255, 0, 0)).save(first_root / "old-folder" / "old.jpg")
+    Image.new("RGB", (32, 32), color=(0, 255, 0)).save(second_root / "new-folder" / "new.jpg")
+
+    app_module._run_state.update({
+        "state": "done",
+        "root": str(first_root),
+        "total": 99,
+        "converted_count": 99,
+        "skipped_count": 11,
+        "recycled_count": 2,
+        "folders": [{"folder": str(first_root / "old-folder"), "count": 99, "status": "done"}],
+    })
+
+    client = app_module.app.test_client()
+    response = client.post("/api/scan", json={"root": str(second_root)})
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["root"] == str(second_root)
+    assert payload["count"] == 1
+    assert payload["folders"] == summarize_folder_status(second_root)
+
+    state = app_module._run_state_for_json()
+    assert state["state"] == "idle"
+    assert state["root"] == str(second_root)
+    assert state["total"] == 1
+    assert state["converted_count"] == 0
+    assert state["skipped_count"] == 0
+    assert state["recycled_count"] == 0
+    assert state["folders"] == summarize_folder_status(second_root)
+
+
 def test_summarize_image_counts_by_folder(tmp_path: Path) -> None:
     source_dir = tmp_path / "images"
     (source_dir / "first").mkdir(parents=True)

@@ -965,6 +965,8 @@
       scanBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Scanning…';
       summary.textContent = `Scanning folder structure under ${root}…`;
       progressLabel.textContent = 'Scanning…';
+      updateSessionSummary({ total: 0, folders: [], processed: 0, converted_count: 0, skipped_count: 0, recycled_count: 0, saved_bytes: 0, state: 'idle', root });
+      folderSummary.innerHTML = '<div class="text-muted small">Scanning folder structure…</div>';
 
       try {
         const data = await callApi('/api/scan', { root });

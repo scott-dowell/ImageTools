@@ -17,7 +17,7 @@ from converter import (
     update_folder_statuses,
 )
 
-APP_VERSION = "1.0.3"
+APP_VERSION = "1.0.4"
 
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
@@ -304,9 +304,39 @@ def scan_folder():
     if not root:
         return jsonify({"error": "No root folder specified"}), 400
 
+    with _run_lock:
+        if _run_state["state"] == "running":
+            if _current_thread and _current_thread.is_alive():
+                return jsonify({"error": "A conversion is already running"}), 409
+            _run_state["state"] = "idle"
+
     root_path = Path(root)
     files = discover_image_files(root_path)
     folder_summary = summarize_folder_status(root_path)
+    _update_run_state(
+        state="idle",
+        phase="idle",
+        root=str(root_path),
+        total=len(files),
+        processed=0,
+        converted_count=0,
+        skipped_count=0,
+        recycled_count=0,
+        current_file="",
+        progress_percent=0.0,
+        saved_bytes=0,
+        started_at=None,
+        completed_at=None,
+        result={
+            "scan_count": len(files),
+            "root": str(root_path),
+        },
+        folders=folder_summary,
+        processed_paths=[],
+        completed_paths=[],
+        paused=False,
+        stop_requested=False,
+    )
     return jsonify({
         "root": str(root_path),
         "count": len(files),
