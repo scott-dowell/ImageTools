@@ -71,6 +71,30 @@ def test_browse_folder_skips_children_that_raise_permission_error(monkeypatch: o
     assert "safe" in [item["name"] for item in payload["dirs"]]
 
 
+def test_browse_folder_avoids_expensive_nested_child_scans(monkeypatch: object, tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    child = root / "child"
+    child.mkdir(parents=True)
+    (child / "deep").mkdir()
+
+    real_scandir = __import__("os").scandir
+
+    def fake_scandir(path: str):
+        if path == str(child):
+            raise AssertionError("browse_folder should not inspect nested child folders just to decide has_children")
+        return real_scandir(path)
+
+    monkeypatch.setattr(__import__("os"), "scandir", fake_scandir)
+
+    client = app_module.app.test_client()
+    response = client.get("/api/browse", query_string={"path": str(root)})
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["path"].replace("\\", "/") == str(root).replace("\\", "/")
+    assert any(item["name"] == "child" for item in payload["dirs"])
+
+
 def test_discover_and_convert_images(tmp_path: Path) -> None:
     source_dir = tmp_path / "images"
     source_dir.mkdir()

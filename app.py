@@ -454,20 +454,13 @@ def browse_folder():
                 if attrs & 0x2 or attrs & 0x4:  # HIDDEN | SYSTEM
                     continue
 
-                has_children = False
-                try:
-                    with os.scandir(entry.path) as sub_entries:
-                        for sub in sub_entries:
-                            if sub.is_dir(follow_symlinks=False) and sub.name.lower() not in _SYSTEM_FOLDERS:
-                                has_children = True
-                                break
-                except PermissionError:
-                    pass
-
+                # Avoid extra per-directory scans here. The UI only uses this as an
+                # affordance for the browse chevron, and probing every subfolder makes
+                # large directory trees feel locked up while the modal loads.
                 directories.append({
                     "name": entry.name,
                     "full_path": entry.path.replace("\\", "/"),
-                    "has_children": has_children,
+                    "has_children": True,
                 })
             except (PermissionError, OSError):
                 continue
