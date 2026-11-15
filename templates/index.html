@@ -417,6 +417,8 @@
     let suppressResultsScrollHandler = false;
     let lastConvertingFolder = '';
     let lastResultsScrollTop = 0;
+    let lastFolderRenderAt = 0;
+    let lastFolderRenderKey = '';
     let resultsManualScrollLocked = false;
     let isApplyingResultsScroll = false;
     let tableSort = { key: null, direction: null };
@@ -621,7 +623,7 @@
       document.addEventListener('mouseup', onMouseUp);
     }
 
-    function startProgressPolling(intervalMs = 400) {
+    function startProgressPolling(intervalMs = 1200) {
       clearInterval(progressTimer);
       progressTimer = setInterval(updateProgress, intervalMs);
     }
@@ -1062,8 +1064,15 @@
           progressDetail.textContent = isRunning && data.current_file ? `Working on ${data.current_file}` : 'No conversion running.';
         }
 
-        if (data.folders && data.folders.length && !hasOpenRowActionMenu) {
+        const shouldRenderFolderTable = data.folders && data.folders.length && !hasOpenRowActionMenu && (
+          data.state !== 'running' ||
+          Date.now() - lastFolderRenderAt >= 1000 ||
+          (data.current_file || '') !== lastFolderRenderKey
+        );
+        if (shouldRenderFolderTable) {
           renderFolderResults(data.folders);
+          lastFolderRenderAt = Date.now();
+          lastFolderRenderKey = data.current_file || '';
         }
 
         if (data.state === 'done') {
