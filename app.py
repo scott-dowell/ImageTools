@@ -17,7 +17,7 @@ from converter import (
     update_folder_statuses,
 )
 
-APP_VERSION = "1.0.4"
+APP_VERSION = "1.0.5"
 
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
