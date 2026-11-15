@@ -419,6 +419,7 @@
     let lastResultsScrollTop = 0;
     let lastFolderRenderAt = 0;
     let lastFolderRenderKey = '';
+    let lastFolderTableSnapshot = '';
     let resultsManualScrollLocked = false;
     let isApplyingResultsScroll = false;
     let tableSort = { key: null, direction: null };
@@ -628,7 +629,27 @@
       progressTimer = setInterval(updateProgress, intervalMs);
     }
 
-    function renderFolderResults(items) {
+    function makeFolderTableSnapshot(items) {
+      return JSON.stringify((items || []).map((item) => ({
+        folder: item.folder,
+        status: item.status,
+        progress: item.progress,
+        converted: item.converted,
+        skipped: item.skipped,
+        count: item.count,
+        saved_bytes: item.saved_bytes,
+        size_before_bytes: item.size_before_bytes,
+        size_after_bytes: item.size_after_bytes,
+        savings_percent: item.savings_percent,
+      })));
+    }
+
+    function renderFolderResults(items, force = false) {
+      const nextSnapshot = makeFolderTableSnapshot(items);
+      if (!force && nextSnapshot === lastFolderTableSnapshot && !hasOpenRowActionMenu) {
+        return;
+      }
+      lastFolderTableSnapshot = nextSnapshot;
       const root = document.getElementById('rootFolder').value;
       const indexedItems = items.map((item, index) => ({ ...item, __index: index }));
       const sortedItems = applyFolderSort(indexedItems);
