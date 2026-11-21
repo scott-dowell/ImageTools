@@ -1,11 +1,13 @@
 from datetime import datetime
+import os
+import stat
 from pathlib import Path
 
 from PIL import Image
 
 import app as app_module
 import converter as converter_module
-from app import _update_folder_statuses_for_progress, select_folder_path, write_uploaded_folder
+from app import APP_VERSION, _update_folder_statuses_for_progress, select_folder_path, write_uploaded_folder
 from converter import (
     build_folder_progress_summary,
     cleanup_legacy_converted_folders,
@@ -14,6 +16,7 @@ from converter import (
     summarize_folder_status,
     summarize_image_counts_by_folder,
     update_folder_statuses,
+    _remove_source_file,
 )
 
 
@@ -42,6 +45,16 @@ def test_write_uploaded_folder_preserves_relative_paths(tmp_path: Path) -> None:
     assert written_root == destination_root / "photos"
     assert (written_root / "nested" / "one.jpg").exists()
     assert (written_root / "README.txt").exists()
+
+
+def test_remove_source_file_clears_readonly_attribute(tmp_path: Path) -> None:
+    source = tmp_path / "readonly.jpg"
+    source.write_bytes(b"image")
+    os.chmod(source, stat.S_IREAD)
+
+    _remove_source_file(source)
+
+    assert not source.exists()
 
 
 def test_browse_folder_skips_children_that_raise_permission_error(monkeypatch: object, tmp_path: Path) -> None:
@@ -204,6 +217,7 @@ def test_index_page_includes_current_app_version() -> None:
     response = client.get("/")
 
     assert response.status_code == 200
+    assert APP_VERSION == "1.0.6"
     assert f"v{app_module.APP_VERSION}" in response.get_data(as_text=True)
 
 

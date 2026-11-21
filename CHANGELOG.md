@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Issue #45: Force-delete read-only source images after successful conversion because the original files are no longer needed.
 - Issue #44: Throttle live folder-table refreshes during large conversions so the progress UI keeps updating instead of appearing frozen.
 - Issue #43: Skip expensive child-directory checks while browsing large folder trees so the picker stays responsive.
 - Issue #42: Refresh shared scan state and clear stale rows on scan start so rescans show newly added folders correctly.

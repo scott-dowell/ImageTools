@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import stat
 from pathlib import Path
 from typing import Any, Callable, Dict, List
 
@@ -50,6 +51,14 @@ def _recycle_file(path: Path) -> bool:
         return True
     except OSError:
         return False
+
+
+def _remove_source_file(path: Path) -> None:
+    try:
+        os.chmod(path, stat.S_IWRITE)
+    except (AttributeError, OSError):
+        pass
+    path.unlink(missing_ok=True)
 
 
 def _normalize_folder_path(path: str | os.PathLike[str]) -> str:
@@ -288,25 +297,42 @@ def convert_tree(
             conversion_results.append(progress_result)
         else:
             size_before_bytes = source_path.stat().st_size
-            source_path.unlink(missing_ok=True)
-            output_size = output_path.stat().st_size
-            saved_bytes = max(size_before_bytes - output_size, 0)
-            results["converted_count"] += 1
-            results["files"].append({
-                "path": str(source_path),
-                "status": "converted",
-                "output": str(output_path),
-                "size_before_bytes": size_before_bytes,
-                "size_after_bytes": output_size,
-                "saved_bytes": saved_bytes,
-            })
-            conversion_results.append({
-                "path": str(source_path),
-                "status": "converted",
-                "size_before_bytes": size_before_bytes,
-                "size_after_bytes": output_size,
-                "saved_bytes": saved_bytes,
-            })
+            try:
+                _remove_source_file(source_path)
+            except (PermissionError, OSError) as exc:
+                results["skipped_count"] += 1
+                status = "failed_permission" if _is_access_related_error(exc) else "failed"
+                file_result = {"path": str(source_path), "status": status}
+                progress_result = {"path": str(source_path), "status": status}
+                error_message = str(exc)
+                if error_message:
+                    file_result["error"] = error_message
+                    progress_result["error"] = error_message
+                results["files"].append(file_result)
+                conversion_results.append(progress_result)
+                try:
+                    output_path.unlink(missing_ok=True)
+                except OSError:
+                    pass
+            else:
+                output_size = output_path.stat().st_size
+                saved_bytes = max(size_before_bytes - output_size, 0)
+                results["converted_count"] += 1
+                results["files"].append({
+                    "path": str(source_path),
+                    "status": "converted",
+                    "output": str(output_path),
+                    "size_before_bytes": size_before_bytes,
+                    "size_after_bytes": output_size,
+                    "saved_bytes": saved_bytes,
+                })
+                conversion_results.append({
+                    "path": str(source_path),
+                    "status": "converted",
+                    "size_before_bytes": size_before_bytes,
+                    "size_after_bytes": output_size,
+                    "saved_bytes": saved_bytes,
+                })
 
         processed_paths.append(source_path)
         completed_paths.append(source_path)
